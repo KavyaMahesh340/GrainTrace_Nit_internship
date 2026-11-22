@@ -2,7 +2,7 @@
 
 Every packet produced. Every gram accounted for.
 
-GRAINTRACE is a manufacturing intelligence system for small food manufacturers, organized around the material journey from salesman order through audit. This repository contains **Phase 1: Foundation & Design System**, the **Phase 2 database, authentication, and role foundation**, and the **Phase 3 pure domain engine and benchmark**. Operational preview sections remain explicitly labeled; workflow services and business UI screens are still not active.
+GRAINTRACE is a manufacturing intelligence system for small food manufacturers, organized around the material journey from salesman order through audit. This repository contains **Phase 1: Foundation & Design System**, the **Phase 2 database, authentication, and role foundation**, the **Phase 3 pure domain engine and benchmark**, and **Phase 4: Purchases and Inventory**. Purchases and inventory are live database-backed workflows; other operational sections remain explicitly labeled route shells.
 
 ## Prerequisites
 
@@ -64,8 +64,8 @@ npm run db:studio
 | `/session-expired` | Expired or revoked session state |
 | `/` | Protected factory overview with preview data |
 | `/orders` | Phase 2 route shell |
-| `/purchases` | Phase 2 route shell |
-| `/inventory` | Phase 2 route shell |
+| `/purchases` | Live purchase order, goods receipt, and supplier workflow |
+| `/inventory` | Live stock, batch, movement, alert, and adjustment workspace |
 | `/recipes` | Phase 2 route shell |
 | `/production` | Phase 2 route shell |
 | `/finished-goods` | Phase 2 route shell |
@@ -78,8 +78,10 @@ npm run db:studio
 | `/unauthorized` | Role-based access denied state |
 | `/api/auth/login` | Validates credentials and sets the httpOnly session cookie |
 | `/api/auth/logout` | Revokes the session on the server and clears the cookie |
+| `/api/purchases/*` | Server-authorized supplier, purchase order, status, and goods receipt APIs |
+| `/api/inventory/*` | Server-authorized stock query, detail, overview, and adjustment APIs |
 
-All application routes except `/login`, `/session-expired`, the authentication APIs, and the root not-found state require a valid server-validated session. Route shells are real destinations that state their status. They do not simulate workflows.
+All application routes except `/login`, `/session-expired`, the authentication APIs, and the root not-found state require a valid server-validated session. Purchases and inventory write through server-side workflow services; the remaining route shells are real destinations that state their status without simulating workflows.
 
 ## Demo accounts
 
@@ -105,6 +107,8 @@ scripts/                Seed and responsive verification runners
 src/app/                App Router pages, auth APIs, and global styles
 src/components/layout/  Application shell, navigation, and user menu
 src/components/overview/ Factory overview sections
+src/components/purchases/ Live purchasing workspace
+src/components/inventory/ Live inventory workspace
 src/components/system/  System-level client components
 src/components/ui/      Reusable shadcn-style primitives
 src/domain/             Pure money, unit, inventory, costing, production, tax, invoice, payment, and order rules
@@ -113,12 +117,13 @@ src/lib/data/           Zod-validated preview snapshot
 src/lib/db/             Drizzle schema, connection, migrations, and seed
 src/lib/domain/         Preview schema and inferred types
 src/lib/offline/        IndexedDB mutation queue
+src/lib/workflows/      Transactional purchasing and inventory services
 src/lib/format.ts       Presentation helpers
 src/lib/navigation.ts   Route registry
 src/tests/              Vitest setup and suites
 ```
 
-## Phase 1, Phase 2, and Phase 3 scope
+## Phase 1, Phase 2, Phase 3, and Phase 4 scope
 
 Implemented:
 
@@ -138,14 +143,16 @@ Implemented:
 - Server-side Zod validation for credentials and route references; no client role or user ID is trusted.
 - Pure domain rules for integer money, exact unit conversion, append-only stock, weighted average costing, production variance, GST, invoices, payments, and partial fulfilment.
 - Deterministic Phase 3 benchmark fixture, acceptance tests, and report in `docs/BENCHMARK.md`.
+- Transactional supplier, purchase order, approval-state, and goods receipt workflows with duplicate and over-receipt guards.
+- Batch-linked stock receipts with lot code, expiry, damaged/rejected quantities, unit cost, audit events, and append-only ledger entries.
+- Live inventory table, low-stock and expiry alerts, batch detail, movement timeline, adjustment history, and reason-coded adjustments.
+- Server-side role authorization on pages and APIs; purchase posting and inventory adjustment permissions are separate.
 
 Not implemented:
 
-- Any business workflow, approval, transaction, or quantity ledger page.
-- Quantity conservation enforcement in workflow services; the schema and ledger tables exist, but no workflow writes to them yet.
+- Workflows outside purchases and inventory, such as recipes, production, finished goods, invoices, payments, dispatch, collections, and audit reporting.
 - Report generation despite the report libraries being installed.
-- Live database-backed pages.
-- Offline write synchronization.
+- Offline write synchronization; the queue foundation exists, but workflow writes require a live server.
 - Business reports and exports; the supplied calculations are implemented in the pure domain layer but no live report or export screen consumes them.
 - Upstream security advisories affecting the mandated Next.js 14 line and a transitive ExcelJS dependency; fixes require stack changes that were not authorized in Phase 1.
 
@@ -179,4 +186,4 @@ npm run verify:responsive
 
 ## Git
 
-Phase 1, Phase 2, and Phase 3 are committed checkpoints. Do not commit secrets or local database files. Demo passwords are documentation-only credentials for local evaluation.
+Phase 1, Phase 2, Phase 3, and Phase 4 are committed checkpoints. Do not commit secrets or local database files. Demo passwords are documentation-only credentials for local evaluation.

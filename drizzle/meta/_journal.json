@@ -15,6 +15,13 @@
       "when": 1795341601001,
       "tag": "0001_soft_domino",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1795344855715,
+      "tag": "0002_volatile_lorna_dane",
+      "breakpoints": true
     }
   ]
 }

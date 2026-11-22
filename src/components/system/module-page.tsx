@@ -28,7 +28,7 @@ export function ModulePage({
       </Link>
       <div className="mt-8 grid gap-8 lg:grid-cols-12">
         <div className="lg:col-span-8">
-          <p className="mono-label text-rust">Module {code} / Phase 1</p>
+          <p className="mono-label text-rust">Module {code} / Route scope</p>
           <h1 className="mt-4 text-4xl font-semibold leading-none tracking-tightest sm:text-6xl">
             {title}
           </h1>
@@ -45,9 +45,9 @@ export function ModulePage({
       </div>
       <div className="mt-12">
         <EmptyState
-          code="Planned for phase 2"
+          code="Not yet implemented"
           title="This workflow is scoped, not simulated."
-          description="Phase 1 establishes the foundation and route structure. The functional requirements for this module are documented in docs/REQUIREMENTS.md and are scheduled for implementation in Phase 2."
+          description="This route is reserved for a future workflow stage. The functional requirements are documented in docs/REQUIREMENTS.md; no placeholder controls are presented as working actions."
           actionLabel="Back to factory overview"
           actionHref="/"
         />

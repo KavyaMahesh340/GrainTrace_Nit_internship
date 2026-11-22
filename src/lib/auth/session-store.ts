@@ -53,6 +53,7 @@ export function resolveSessionToken(token: string | undefined | null): SessionRe
       expiresAt: sessions.expiresAt,
       revokedAt: sessions.revokedAt,
       userId: users.id,
+      factoryId: users.factoryId,
       email: users.email,
       fullName: users.fullName,
       userStatus: users.status,
@@ -86,6 +87,7 @@ export function resolveSessionToken(token: string | undefined | null): SessionRe
     expiresAt: row.expiresAt,
     user: {
       id: row.userId,
+      factoryId: row.factoryId,
       email: row.email,
       fullName: row.fullName,
       role,

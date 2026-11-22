@@ -337,7 +337,10 @@ export const purchaseOrders = sqliteTable(
     index("purchase_orders_factory_idx").on(table.factoryId),
     index("purchase_orders_supplier_idx").on(table.supplierId),
     index("purchase_orders_status_idx").on(table.status),
-    check("purchase_orders_status_check", sql`${table.status} in ('draft', 'approved', 'received', 'cancelled')`),
+    check(
+      "purchase_orders_status_check",
+      sql`${table.status} in ('draft', 'submitted', 'approved', 'partially_received', 'received', 'cancelled')`,
+    ),
     check("purchase_orders_total_check", sql`${table.totalAmountPaise} >= 0`),
   ],
 );
@@ -428,6 +431,18 @@ export const goodsReceiptItems = sqliteTable(
     }),
     quantityGrams: integer("quantity_grams"),
     quantityUnits: integer("quantity_units"),
+    purchaseOrderRawMaterialId: integer("purchase_order_raw_material_id").references(
+      () => purchaseOrderRawMaterials.id,
+      { onDelete: "restrict" },
+    ),
+    purchaseOrderPackagingMaterialId: integer("purchase_order_packaging_material_id").references(
+      () => purchaseOrderPackagingMaterials.id,
+      { onDelete: "restrict" },
+    ),
+    damagedQuantity: integer("damaged_quantity").notNull().default(0),
+    rejectedQuantity: integer("rejected_quantity").notNull().default(0),
+    lotCode: text("lot_code").notNull().default(""),
+    expiresAt: text("expires_at"),
     unitPricePaise: integer("unit_price_paise").notNull(),
     lineTotalPaise: integer("line_total_paise").notNull(),
     ...timestamps,
@@ -435,7 +450,10 @@ export const goodsReceiptItems = sqliteTable(
   (table) => [
     index("goods_receipt_items_receipt_idx").on(table.goodsReceiptId),
     check("goods_receipt_items_material_check", sql`(${table.rawMaterialId} is not null) <> (${table.packagingMaterialId} is not null)`),
+    check("goods_receipt_items_order_line_check", sql`(${table.purchaseOrderRawMaterialId} is not null) <> (${table.purchaseOrderPackagingMaterialId} is not null)`),
     check("goods_receipt_items_quantity_check", sql`coalesce(${table.quantityGrams}, 0) > 0 or coalesce(${table.quantityUnits}, 0) > 0`),
+    check("goods_receipt_items_exception_check", sql`${table.damagedQuantity} >= 0 and ${table.rejectedQuantity} >= 0`),
+    check("goods_receipt_items_lot_check", sql`length(${table.lotCode}) > 0`),
     check("goods_receipt_items_price_check", sql`${table.unitPricePaise} >= 0`),
     check("goods_receipt_items_total_check", sql`${table.lineTotalPaise} >= 0`),
   ],
@@ -468,6 +486,38 @@ export const materialBatches = sqliteTable(
     index("material_batches_material_idx").on(table.rawMaterialId),
     check("material_batches_quantity_check", sql`${table.quantityGrams} > 0`),
     check("material_batches_available_check", sql`${table.availableGrams} >= 0`),
+    check("material_batches_available_limit_check", sql`${table.availableGrams} <= ${table.quantityGrams}`),
+  ],
+);
+
+export const packagingBatches = sqliteTable(
+  "packaging_batches",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    factoryId: integer("factory_id")
+      .notNull()
+      .references(() => factories.id, { onDelete: "restrict" }),
+    packagingMaterialId: integer("packaging_material_id")
+      .notNull()
+      .references(() => packagingMaterials.id, { onDelete: "restrict" }),
+    goodsReceiptItemId: integer("goods_receipt_item_id").references(() => goodsReceiptItems.id, {
+      onDelete: "set null",
+    }),
+    supplierId: integer("supplier_id").references(() => suppliers.id, { onDelete: "set null" }),
+    batchCode: text("batch_code").notNull(),
+    receivedAt: text("received_at").notNull(),
+    quantityUnits: integer("quantity_units").notNull(),
+    availableUnits: integer("available_units").notNull(),
+    expiresAt: text("expires_at"),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex("packaging_batches_factory_code_unique").on(table.factoryId, table.batchCode),
+    index("packaging_batches_factory_idx").on(table.factoryId),
+    index("packaging_batches_material_idx").on(table.packagingMaterialId),
+    check("packaging_batches_quantity_check", sql`${table.quantityUnits} > 0`),
+    check("packaging_batches_available_check", sql`${table.availableUnits} >= 0`),
+    check("packaging_batches_available_limit_check", sql`${table.availableUnits} <= ${table.quantityUnits}`),
   ],
 );
 
@@ -582,6 +632,57 @@ export const finishedGoodPackets = sqliteTable(
   ],
 );
 
+export const inventoryAdjustments = sqliteTable(
+  "inventory_adjustments",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    factoryId: integer("factory_id")
+      .notNull()
+      .references(() => factories.id, { onDelete: "restrict" }),
+    adjustmentNumber: text("adjustment_number").notNull(),
+    rawMaterialBatchId: integer("raw_material_batch_id").references(() => materialBatches.id, {
+      onDelete: "restrict",
+    }),
+    packagingBatchId: integer("packaging_batch_id").references(() => packagingBatches.id, {
+      onDelete: "restrict",
+    }),
+    finishedGoodId: integer("finished_good_id").references(() => finishedGoods.id, {
+      onDelete: "restrict",
+    }),
+    direction: text("direction").notNull(),
+    baseUnit: text("base_unit").notNull(),
+    quantityBase: integer("quantity_base").notNull(),
+    reason: text("reason").notNull(),
+    notes: text("notes"),
+    unitCostNumerator: integer("unit_cost_numerator"),
+    unitCostDenominator: integer("unit_cost_denominator"),
+    occurredAt: text("occurred_at").notNull(),
+    createdByUserId: integer("created_by_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex("inventory_adjustments_factory_number_unique").on(table.factoryId, table.adjustmentNumber),
+    index("inventory_adjustments_factory_idx").on(table.factoryId),
+    index("inventory_adjustments_raw_batch_idx").on(table.rawMaterialBatchId),
+    index("inventory_adjustments_packaging_batch_idx").on(table.packagingBatchId),
+    index("inventory_adjustments_finished_good_idx").on(table.finishedGoodId),
+    check(
+      "inventory_adjustments_target_check",
+      sql`(${table.rawMaterialBatchId} is not null) + (${table.packagingBatchId} is not null) + (${table.finishedGoodId} is not null) = 1`,
+    ),
+    check("inventory_adjustments_direction_check", sql`${table.direction} in ('increment', 'decrement')`),
+    check("inventory_adjustments_base_unit_check", sql`${table.baseUnit} in ('grams', 'millilitres', 'pieces')`),
+    check("inventory_adjustments_quantity_check", sql`${table.quantityBase} > 0`),
+    check("inventory_adjustments_reason_check", sql`length(${table.reason}) > 0`),
+    check(
+      "inventory_adjustments_cost_check",
+      sql`(${table.unitCostNumerator} is null and ${table.unitCostDenominator} is null) or (${table.unitCostNumerator} >= 0 and ${table.unitCostDenominator} > 0)`,
+    ),
+  ],
+);
+
 export const stockLedger = sqliteTable(
   "stock_ledger",
   {
@@ -592,14 +693,23 @@ export const stockLedger = sqliteTable(
     materialBatchId: integer("material_batch_id").references(() => materialBatches.id, {
       onDelete: "restrict",
     }),
+    packagingBatchId: integer("packaging_batch_id").references(() => packagingBatches.id, {
+      onDelete: "restrict",
+    }),
     finishedGoodId: integer("finished_good_id").references(() => finishedGoods.id, {
       onDelete: "restrict",
     }),
     transactionType: text("transaction_type").notNull(),
     referenceType: text("reference_type").notNull(),
     referenceId: integer("reference_id").notNull(),
-    quantityDeltaGrams: integer("quantity_delta_grams").notNull(),
-    balanceGrams: integer("balance_grams").notNull(),
+    referenceNumber: text("reference_number").notNull(),
+    baseUnit: text("base_unit").notNull(),
+    quantityDelta: integer("quantity_delta").notNull(),
+    balance: integer("balance").notNull(),
+    quantityDeltaGrams: integer("quantity_delta_grams").notNull().default(0),
+    balanceGrams: integer("balance_grams").notNull().default(0),
+    unitCostNumerator: integer("unit_cost_numerator"),
+    unitCostDenominator: integer("unit_cost_denominator"),
     occurredAt: text("occurred_at").notNull(),
     createdByUserId: integer("created_by_user_id")
       .notNull()
@@ -609,11 +719,20 @@ export const stockLedger = sqliteTable(
   (table) => [
     index("stock_ledger_factory_idx").on(table.factoryId),
     index("stock_ledger_material_batch_idx").on(table.materialBatchId),
+    index("stock_ledger_packaging_batch_idx").on(table.packagingBatchId),
     index("stock_ledger_finished_good_idx").on(table.finishedGoodId),
     index("stock_ledger_reference_idx").on(table.referenceType, table.referenceId),
-    check("stock_ledger_source_check", sql`(${table.materialBatchId} is not null) <> (${table.finishedGoodId} is not null)`),
-    check("stock_ledger_delta_check", sql`${table.quantityDeltaGrams} <> 0`),
-    check("stock_ledger_balance_check", sql`${table.balanceGrams} >= 0`),
+    check(
+      "stock_ledger_source_check",
+      sql`(${table.materialBatchId} is not null) + (${table.packagingBatchId} is not null) + (${table.finishedGoodId} is not null) = 1`,
+    ),
+    check("stock_ledger_base_unit_check", sql`${table.baseUnit} in ('grams', 'millilitres', 'pieces')`),
+    check("stock_ledger_delta_check", sql`${table.quantityDelta} <> 0`),
+    check("stock_ledger_balance_check", sql`${table.balance} >= 0`),
+    check(
+      "stock_ledger_cost_check",
+      sql`(${table.unitCostNumerator} is null and ${table.unitCostDenominator} is null) or (${table.unitCostNumerator} >= 0 and ${table.unitCostDenominator} > 0)`,
+    ),
   ],
 );
 

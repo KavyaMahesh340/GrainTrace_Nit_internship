@@ -4,7 +4,7 @@
 
 Source of truth: `docs/PROBLEM.md`. The original file was absent from the workspace; the supplied brief was preserved there and used verbatim.
 
-GRAINTRACE is a manufacturing intelligence system for small food manufacturers. Phase 1 delivered the foundation, design system, application shell, factory overview, and honest route structure. Phase 2 delivered the normalized database, authentication, expiring sessions, and server-enforced role permissions. Phase 3 adds the pure domain engine and deterministic benchmark. Workflow services and UI screens remain intentionally unimplemented.
+GRAINTRACE is a manufacturing intelligence system for small food manufacturers. Phase 1 delivered the foundation, design system, application shell, factory overview, and honest route structure. Phase 2 delivered the normalized database, authentication, expiring sessions, and server-enforced role permissions. Phase 3 delivered the pure domain engine and deterministic benchmark. Phase 4 adds live purchasing and inventory workflow services, APIs, and UI screens. Other workflow stages remain intentionally unimplemented.
 
 A requirement is marked **explicit** when stated in the brief and **implied** when directly named by the material-journey chain but lacking detail. Implied items are recorded for planning only and are not implemented or expanded with invented rules.
 
@@ -224,4 +224,28 @@ The Phase 3 brief supplied in conversation is the active source for this section
 | P3-FR-13 | Produce a human-readable benchmark report in `docs/BENCHMARK.md`. | Implemented |
 | P3-FR-14 | Run tests and fix failures, then verify and commit Phase 3. | Implemented and committed |
 
-Workflow services that write to SQLite, live reporting, and workflow UI screens remain out of scope for Phase 3.
+Workflow services that write to SQLite, live reporting, and workflow UI screens were out of scope for Phase 3.
+
+## Phase 4 requirements
+
+The Phase 4 brief supplied in conversation is the active source for this section. It replaces the earlier invoice/dispatch/collection/audit plan with end-to-end purchasing and inventory workflows.
+
+| ID | Requirement | Status |
+| --- | --- | --- |
+| P4-FR-01 | Implement supplier master and purchase order workflows with server-side validation, factory scoping, and document-number uniqueness. | Implemented |
+| P4-FR-02 | Support purchase order statuses: draft, submitted, approved, partially received, received, and cancelled, with guarded transitions. | Implemented |
+| P4-FR-03 | Prevent stock increase until a goods receipt is posted against an approved or partially received order. | Implemented |
+| P4-FR-04 | Capture actual accepted quantities, damaged and rejected quantities, unit costs, lot codes, and expiry dates on receipts. | Implemented |
+| P4-FR-05 | Prevent duplicate receipts, duplicate receipt lines, over-receipt, unknown lines, and receipt against invalid order states. | Implemented |
+| P4-FR-06 | Post every accepted receipt quantity to the append-only stock ledger with source document reference and unit cost. | Implemented |
+| P4-FR-07 | Recalculate purchase order status after each receipt based on fully delivered order lines. | Implemented |
+| P4-FR-08 | Provide inventory views for raw materials, packaging, and finished goods with item, unit, balance, average cost, stock value, minimum stock, status, and last movement. | Implemented |
+| P4-FR-09 | Provide working search, filters, sorting, low-stock alerts, expiry alerts, stock history, and batch detail. | Implemented |
+| P4-FR-10 | Require a reason for every stock adjustment and post an append-only ledger entry; never edit stored balances directly. | Implemented |
+| P4-FR-11 | Enforce role permissions on both pages and API route handlers; separate purchase posting from inventory adjustment authority. | Implemented |
+| P4-FR-12 | Provide loading, error, empty, and validation states without fake buttons or simulated actions. | Implemented |
+| P4-FR-13 | Use the Phase 3 domain engine for balance, valuation, average cost, money arithmetic, and stock movement validation. | Implemented |
+| P4-FR-14 | Test purchase orders, receipts, inventory valuation, adjustments, negative-stock prevention, and role authorization. | Implemented |
+| P4-FR-15 | Preserve Phase 1–3 behavior and benchmark results, then verify and commit Phase 4. | Implemented |
+
+Purchases and inventory are the only live workflow stages. Recipes, production, finished goods, invoices, dispatch, collections, audit reporting, live report exports, and offline write synchronization remain out of scope for Phase 4.

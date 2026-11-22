@@ -2,6 +2,7 @@ import type { Permission, RoleName } from "./permissions";
 
 export type SessionUser = {
   id: number;
+  factoryId: number;
   email: string;
   fullName: string;
   role: RoleName;

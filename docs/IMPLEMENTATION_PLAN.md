@@ -62,28 +62,36 @@ Delivered:
 
 **Exit criteria:** all tests pass, typecheck and lint pass, production build succeeds, and Phase 3 is committed before stopping.
 
-## Following phase
+## Phase 4 — Purchases and inventory (completed)
 
-Workflow services, repository-backed transactions, live reporting, and workflow UI screens remain deferred. No subsequent phase begins automatically.
+The active Phase 4 brief replaced the earlier invoice/dispatch/collection/audit plan with end-to-end purchasing and inventory workflows.
 
-## Phase 4 — Invoice, dispatch, collection, and audit
+Delivered:
+
+1. A `src/lib/workflows/` service layer with server-only actors, permission checks, Zod input contracts, error mapping, audit recording, and domain-backed ledger posting.
+2. Supplier master creation and purchase order creation with integer paise totals, factory scoping, document-number uniqueness, and line validation.
+3. Purchase order state transitions: draft, submitted, approved, partially received, received, and cancelled, with cancellation blocked after receipt.
+4. Goods receipt posting with actual accepted quantities, damaged and rejected quantities, lot codes, expiry dates, source-line linkage, duplicate guards, over-receipt guards, and automatic order status recalculation.
+5. Batch-linked raw material and packaging stock with append-only stock ledger entries and audit events.
+6. Inventory service queries for raw materials, packaging, and finished goods with derived balances, weighted average cost, stock value, minimum-stock status, expiry alerts, batch detail, and movement history.
+7. Reason-coded stock adjustments that post ledger entries and never edit balances directly.
+8. Live `/purchases` and `/inventory` screens with dense tables, search, filters, sorting, document inspectors, forms, loading states, error states, empty states, and source links.
+9. API route handlers with independent server-side session and permission checks for every read and write.
+10. Workflow tests covering status transitions, receipt guards, duplicate receipts, damaged/rejected quantities, weighted average cost, ledger linkage, negative-stock prevention, invalid adjustments, and role authorization.
+
+**Exit criteria:** schema migration applies, typecheck and lint pass, tests and Phase 3 benchmark pass, production build succeeds, and Phase 4 is committed before stopping.
+
+## Phase 5 — Invoice, dispatch, collection, and audit
 
 Planned scope:
 
 - Invoice generation and collection tracking.
 - Dispatch challans and delivery confirmation.
-- Append-only audit events across every state change.
+- Append-only audit events across every remaining state change.
 - Reconciliation views that prove quantity and transaction accountability.
+- ExcelJS exports, PDF documents, offline synchronization, and accessibility/performance audits against supplied benchmarks.
 
-## Phase 5 — Reports, exports, and offline synchronization
-
-Planned scope:
-
-- ExcelJS-based operational exports.
-- `@react-pdf/renderer` document generation.
-- Report definitions supplied by the product owner.
-- Offline queue synchronization with conflict handling and retry states.
-- Accessibility and performance audits against supplied benchmarks.
+No subsequent phase begins automatically.
 
 ## Dependency policy
 

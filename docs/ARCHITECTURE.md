@@ -4,7 +4,7 @@
 
 GRAINTRACE is a material-journey accountability system. The architecture must make quantity and transaction provenance easy to trace from salesman order through audit, while the interface presents that provenance as an operational surface rather than a generic dashboard.
 
-Phase 1 established the runtime, design tokens, route topology, data workflow, and honest preview experience. Phase 2 adds the normalized database, authentication, expiring sessions, and server-enforced role permissions. Manufacturing workflows remain unimplemented.
+Phase 1 established the runtime, design tokens, route topology, data workflow, and honest preview experience. Phase 2 added the normalized database, authentication, expiring sessions, and server-enforced role permissions. Phase 4 adds live purchasing and inventory workflows built on the Phase 3 pure domain engine; other manufacturing workflows remain unimplemented.
 
 ## Stack decisions
 
@@ -44,12 +44,16 @@ src/
 │   │   ├── login/               Login page and client form
 │   │   └── session-expired/     Expired/revoked session state
 │   ├── api/auth/                Login and logout route handlers
+│   ├── api/purchases/           Supplier, order, status, and receipt APIs
+│   ├── api/inventory/           Stock, detail, overview, and adjustment APIs
 │   ├── globals.css              Tokens and base styles
 │   ├── layout.tsx               Fonts, metadata, PWA manifest
 │   └── not-found.tsx            Root unknown-route state
 ├── components/
 │   ├── layout/                  App shell, header, footer, navigation, user menu
 │   ├── overview/                Overview-specific compositions
+│   ├── purchases/               Live purchasing workspace
+│   ├── inventory/               Live inventory workspace
 │   ├── system/                  Preview badge, reveal, module guards
 │   └── ui/                      Reusable shadcn-style primitives
 ├── domain/                      Pure business engine; no React, UI, or DB imports
@@ -72,6 +76,7 @@ src/
 │   ├── format.ts                Number and currency presentation helpers
 │   ├── navigation.ts            Permission-aware route registry
 │   ├── offline/queue.ts         Native IndexedDB mutation queue
+│   ├── workflows/               Transactional purchasing and inventory services
 │   └── utils.ts                 Class merge utility
 └── tests/                       Vitest setup and test suites
 ```
@@ -96,9 +101,18 @@ Sign-in flow:
   → Session token is generated, hashed with SHA-256, and stored in SQLite
   → httpOnly cookie is attached to the response
   → Server returns only the role-derived landing path
+
+Workflow write flow:
+  → Client form posts JSON to a purchase or inventory API route
+  → Route reads the server-validated session and required permission
+  → Zod schema parses the input and the workflow builds a factory-scoped actor
+  → Workflow service opens a SQLite transaction
+  → Domain engine validates quantities, balances, and money
+  → Workflow writes source documents, audit events, and append-only ledger rows
+  → UI refreshes server-rendered data
 ```
 
-Protected pages never receive a role, user ID, or permission list from the client. The role is read from the database through the server-validated session. Preview data remains explicitly labeled, and no workflow page writes to the database.
+Protected pages never receive a role, user ID, or permission list from the client. The role is read from the database through the server-validated session. Preview data remains explicitly labeled outside the live purchases and inventory workflows.
 
 Phase 3 introduces a pure calculation layer beside the UI and persistence layers:
 
@@ -109,7 +123,7 @@ Domain input (plain data)
   → plain immutable result or explicit DomainError
 ```
 
-Future workflow services will own transactions and call these functions. The domain layer never calls Drizzle, Next.js, React, or browser APIs, so the same rules can be tested deterministically without a running application.
+Phase 4 workflow services own transactions and call these functions. The domain layer never calls Drizzle, Next.js, React, or browser APIs, so the same rules can be tested deterministically without a running application.
 
 ## Route map
 
@@ -120,10 +134,12 @@ Future workflow services will own transactions and call these functions. The dom
 | `/unauthorized` | Role access denied state | Implemented |
 | `/api/auth/login` | Credential validation and session cookie issuance | Implemented |
 | `/api/auth/logout` | Server-side session revocation and cookie clearing | Implemented |
+| `/api/purchases/*` | Supplier, order, status, and receipt writes/reads | Implemented in Phase 4 |
+| `/api/inventory/*` | Stock queries, detail, overview, and adjustments | Implemented in Phase 4 |
 | `/` | Protected factory overview | Implemented with preview data |
 | `/orders` | Salesman orders | Route shell; workflow in Phase 2 |
-| `/purchases` | Purchase stage | Route shell; workflow in Phase 2 |
-| `/inventory` | Raw material inventory | Route shell; workflow in Phase 2 |
+| `/purchases` | Purchase orders, receipts, and suppliers | Implemented in Phase 4 |
+| `/inventory` | Raw, packaging, and finished-goods stock | Implemented in Phase 4 |
 | `/recipes` | Recipe stage | Route shell; workflow in Phase 2 |
 | `/production` | Production stage | Route shell; workflow in Phase 2 |
 | `/finished-goods` | Finished goods | Route shell; workflow in Phase 2 |
@@ -160,7 +176,7 @@ Constraints and indexes:
 - `goods_receipt_items` requires exactly one raw-material or packaging-material reference.
 - `stock_ledger` requires exactly one material-batch or finished-good reference and a non-zero signed quantity delta.
 - Foreign-key indexes and common query indexes are generated for factory, party, document, status, and date columns.
-- `stock_ledger` and `audit_log` are append-only by convention; no workflow service updates or deletes their rows yet.
+- `stock_ledger` and `audit_log` are append-only. Phase 4 workflow services insert rows and never update or delete them.
 
 Migration and seed workflow:
 
@@ -172,7 +188,7 @@ Migration and seed workflow:
 
 `DATABASE_URL` defaults to `./data/graintrace.db`. Local database files are ignored by Git. The seed runs inside a SQLite transaction and is safe to rerun without duplicate codes, emails, or BOM lines.
 
-Phase 3 defines the calculation rules in `src/domain/` rather than in the database: integer-paise money, exact base-unit conversions, weighted average costing, production snapshots, 3% variance tolerance, GST splits, payment balances, and fulfilment limits. No workflow service writes those results to SQLite yet, and document numbering policies and workflow state transitions remain outside the current phase.
+Phase 3 defines the calculation rules in `src/domain/` rather than in the database: integer-paise money, exact base-unit conversions, weighted average costing, production snapshots, 3% variance tolerance, GST splits, payment balances, and fulfilment limits. Phase 4 workflow services write validated purchase, receipt, adjustment, audit, and ledger results to SQLite. Document numbers are user-supplied unique references scoped to the factory; workflow state transitions are enforced in the service layer.
 
 ## Authentication and authorization
 
@@ -192,6 +208,7 @@ The server reads the session with `next/headers`, joins the user's role, rebuild
 | `purchases:view` | Yes | Yes | No | Yes | No |
 | `purchases:manage` | Yes | Yes | No | No | No |
 | `inventory:view` | Yes | Yes | No | Yes | No |
+| `inventory:manage` | Yes | Yes | No | Yes | No |
 | `recipes:view` | Yes | Yes | No | Yes | No |
 | `recipes:manage` | Yes | Yes | No | Yes | No |
 | `production:view` | Yes | Yes | No | Yes | No |
@@ -207,6 +224,22 @@ The server reads the session with `next/headers`, joins the user's role, rebuild
 
 Landing destinations are role-derived: Owner and Admin go to `/`, Salesman to `/orders`, Production to `/production`, and Accountant to `/invoices`. Navigation groups are filtered from the same permission set, but filtering is never the security boundary.
 
+## Workflow service architecture
+
+`src/lib/workflows/` is the server-only transaction boundary for live workflow writes and derived queries.
+
+- `context.ts` builds a factory-scoped actor from the validated session and checks permissions.
+- `validation.ts` defines Zod contracts for supplier, purchase order, receipt, and adjustment input.
+- `api.ts` maps session and permission failures to JSON responses for route handlers.
+- `errors.ts` translates domain, Zod, authorization, and workflow errors into stable API responses.
+- `db.ts` defines the transaction and stock-target types shared by services.
+- `ledger.ts` converts workflow inputs to domain stock movements and writes `stock_ledger` rows.
+- `audit.ts` appends audit events with actor, entity, and metadata.
+- `purchases.ts` owns supplier, purchase order, status transition, and goods receipt transactions.
+- `inventory.ts` derives inventory views from the ledger and owns adjustment transactions.
+
+Purchases do not create stock. Goods receipts create batch rows, post ledger movements with unit cost, append audit events, and recalculate order status. Inventory screens derive balances and values from ledger entries, not from cached balance columns. Adjustments require a reason, use domain stock validation, and append a ledger movement with a `STOCK_ADJUSTMENT` source.
+
 ## Offline architecture
 
 - `public/manifest.webmanifest` provides install metadata.
@@ -215,7 +248,7 @@ Landing destinations are role-derived: Owner and Admin go to `/`, Salesman to `/
 - `src/lib/offline/queue.ts` creates IndexedDB database `graintrace-offline` with store `mutation_queue`.
 - Queue records are validated with Zod and expose enqueue, list, count, and remove operations.
 - `ConnectionStatus` displays actual `navigator.onLine` state and real queue count.
-- No Phase 1 interaction enqueues a mutation, because no writable workflow exists.
+- Purchases and inventory write through live authenticated APIs; the offline queue does not yet synchronize workflow mutations.
 
 ## UI architecture
 
@@ -226,6 +259,7 @@ Landing destinations are role-derived: Owner and Admin go to `/`, Salesman to `/
 - `UserMenu` opens a confirmation sheet before posting to `/api/auth/logout`.
 - Login and session-expired pages use standalone dark surface compositions outside `AppShell`.
 - Overview sections use different structures: split editorial heading, split chart, horizontal flow rail, table, meter list, dark exception ledger, signal action band, timeline, and Batch DNA strand.
+- Phase 4 workspaces use dense document tables, workflow tabs, inline status badges, detail sheets, batch/movement inspectors, and unit-aware financial columns.
 - `Reveal` wraps major sections with subtle viewport motion; `useReducedMotion` disables transform/opacity animation.
 - Recharts is client-only and receives serializable preview data as props.
 
@@ -247,6 +281,8 @@ Landing destinations are role-derived: Owner and Admin go to `/`, Salesman to `/
 - `empty-state.test.tsx`: honest empty state and working action link.
 - `auth.test.ts`: password hashing/verification, generic failures, role-derived login redirects, absent/malformed/expired/revoked sessions, server permission matrix, and duplicate-user rejection.
 - `benchmark.test.ts`: deterministic Phase 3 acceptance values, conversion errors, stock protection, tax rounding, weighted average, cost snapshots, variance tolerance, partial dispatch, payments, outstanding balances, and duplicate posting.
+- `purchases-inventory.test.ts`: Phase 4 approval transitions, early/duplicate/over receipts, damaged and rejected quantities, batch creation, ledger source linkage, weighted average cost, negative-stock prevention, adjustment validation, detail history, and role authorization.
+- Vitest aliases `server-only` to an empty test module so server-only workflow services can be tested directly in the Node-native test environment.
 - Verification commands: `npm run typecheck`, `npm run lint`, `npm test`, `npm run build`.
 
 Browser responsive and console-error checks are automated by `scripts/responsive-check.mjs` using Puppeteer Core and an installed Chrome or Edge binary. The script signs in with the seeded Owner account, then checks 375px, 768px, 1024px, and 1440px plus representative protected routes, the unauthorized state, and a not-found route.
@@ -254,11 +290,11 @@ Browser responsive and console-error checks are automated by `scripts/responsive
 ## Known architectural limitations
 
 - Authentication and authorization are implemented, but no user-management screen exists; `users:manage` is enforced only at the route layer.
-- Pages still render explicitly labeled preview data instead of repository-backed workflow data.
-- The stock ledger tables exist, but no workflow service writes them or enforces quantity conservation yet.
+- Pages outside purchases and inventory still render explicitly labeled preview data instead of repository-backed workflow data.
+- Only purchases and inventory write the stock ledger; production, dispatch, and other consumption workflows remain unimplemented.
 - No synchronization backend for the offline queue.
 - Service worker caches GET responses only; it does not synchronize writes.
-- The Phase 3 domain engine is pure and tested, but no workflow service or UI screen calls it yet.
 - Business reports and exports remain undefined and unimplemented.
-- The seed creates master data only; order, receipt, production, invoice, payment, and dispatch workflows are intentionally empty.
+- Document numbers are user-supplied references rather than server-generated sequences.
+- The seed creates master data only; purchase and inventory records are created through the live workflow UI or tests.
 - `npm audit --omit=dev` reports advisories against the Next.js 14 line whose published fixes require Next.js 15.5+ or 16, plus a transitive `uuid` advisory through ExcelJS. The fixed stack was retained as instructed; these must be reviewed before public deployment.
