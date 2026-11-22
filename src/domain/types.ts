@@ -117,12 +117,17 @@ export type TaxInvoice = {
 
 export type PaymentMethod = "cash" | "upi" | "bank_transfer" | "cheque" | "other";
 
+export type PaymentDirection = "credit" | "debit";
+
 export type PaymentRecord = {
   paymentId: string;
   invoiceNumber: string;
   amountPaise: Paise;
   method: PaymentMethod;
   paidAt: string;
+  direction?: PaymentDirection;
+  correctsPaymentId?: string;
+  reason?: string;
 };
 
 export type FulfilmentPlan = {

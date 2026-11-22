@@ -4,7 +4,7 @@
 
 GRAINTRACE is a material-journey accountability system. The architecture must make quantity and transaction provenance easy to trace from salesman order through audit, while the interface presents that provenance as an operational surface rather than a generic dashboard.
 
-Phase 1 established the runtime, design tokens, route topology, data workflow, and honest preview experience. Phase 2 added the normalized database, authentication, expiring sessions, and server-enforced role permissions. Phase 4 added live purchasing and inventory workflows. Phase 5 added production execution and Batch DNA traceability. Phase 6 adds sales orders, approval control, dispatch, GST invoices, credit notes, collections, and mobile order entry built on the Phase 3 pure domain engine; recipes, finished goods, audit reporting, and offline write synchronization remain unimplemented.
+Phase 1 established the runtime, design tokens, route topology, data workflow, and honest preview experience. Phase 2 added the normalized database, authentication, expiring sessions, and server-enforced role permissions. Phase 4 added live purchasing and inventory workflows. Phase 5 added production execution and Batch DNA traceability. Phase 6 added sales orders, approval control, dispatch, GST invoices, credit notes, collections, and mobile order entry built on the Phase 3 pure domain engine. Phase 7 adds signed payment corrections, collections analytics, ten live reports, CSV/Excel/PDF exports, and audit exploration; recipes, finished goods, and offline write synchronization remain unimplemented.
 
 ## Stack decisions
 
@@ -20,8 +20,8 @@ Phase 1 established the runtime, design tokens, route topology, data workflow, a
 | ORM | Drizzle ORM | Fixed stack; typed schema, migrations, and SQL transparency. |
 | Validation | Zod | Fixed stack; validates preview snapshot, offline queue payloads, login credentials, session tokens, and route references. |
 | Tests | Vitest + Testing Library + fake-indexeddb | Fixed stack plus focused test adapters. |
-| Excel export | ExcelJS | Fixed stack; installed for future reports. |
-| PDF export | `@react-pdf/renderer` | Fixed stack; renders printable Phase 6 tax invoices. |
+| Excel export | ExcelJS | Fixed stack; renders Phase 7 report workbooks and remains available for invoices. |
+| PDF export | `@react-pdf/renderer` | Fixed stack; renders printable Phase 6 tax invoices and Phase 7 report documents. |
 | PWA | Manifest, custom service worker, native IndexedDB | Fixed stack; avoids a heavyweight framework plugin while keeping behavior explicit. |
 | Password hashing | `bcryptjs` | Added in Phase 2 because Node's built-in crypto does not provide a password KDF; bcrypt supplies salted adaptive hashing. |
 | Server boundary guard | `server-only` | Added in Phase 2 so auth session helpers fail the build if imported into a client bundle. |
@@ -150,7 +150,9 @@ Phase 4 and Phase 5 workflow services own transactions and call these functions.
 | `/api/sales/*` | Customer, sales order, option, and status APIs | Implemented in Phase 6 |
 | `/api/dispatch/*` | Fulfilment plan, dispatch, detail, and status APIs | Implemented in Phase 6 |
 | `/api/invoices/*` | Invoice, detail, PDF, cancellation, option, and candidate APIs | Implemented in Phase 6 |
-| `/api/payments/*` | Receipt and collection APIs | Implemented in Phase 6 |
+| `/api/payments/*` | Receipt, correction, collection, and dashboard APIs | Implemented in Phase 6; corrections in Phase 7 |
+| `/api/reports/*` | Report query and CSV/Excel/PDF export APIs | Implemented in Phase 7 |
+| `/api/audit/*` | Audit entry search and auditor trail APIs | Implemented in Phase 7 |
 | `/` | Protected factory overview | Implemented with preview data |
 | `/orders` | Salesman orders and approval tracking | Implemented in Phase 6 |
 | `/purchases` | Purchase orders, receipts, and suppliers | Implemented in Phase 4 |
@@ -160,16 +162,17 @@ Phase 4 and Phase 5 workflow services own transactions and call these functions.
 | `/finished-goods` | Finished goods | Route shell; workflow planned |
 | `/invoices` | GST invoices, PDFs, and credit notes | Implemented in Phase 6 |
 | `/dispatch` | Fulfilment planning and dispatch challans | Implemented in Phase 6 |
-| `/collections` | Receipts and outstanding invoices | Implemented in Phase 6 |
-| `/audit` | Audit stage | Route shell; workflow planned |
+| `/collections` | Receipts, corrections, aging, and outstanding invoices | Implemented in Phase 6; corrections in Phase 7 |
+| `/reports` | Report catalog, filters, table, summaries, and exports | Implemented in Phase 7 |
+| `/audit` | Audit explorer and source-to-transaction trails | Implemented in Phase 7 |
 | `/batch-dna` | Signature trace instrument | Implemented in Phase 5 |
 | `/offline` | Offline fallback | Implemented |
 
-Overview links preserve preview references in query strings (for example `/orders?focus=SO-2481`). The destination route reads and displays the reference. This makes each link functional without pretending the workflow exists.
+Overview links preserve real and preview references in query strings (for example `/orders?focus=SO-2481`). The destination route reads and displays the reference, and live modules resolve the reference against repository data when available.
 
 ## Database design
 
-The schema grew from thirty-one Phase 2 tables to the Phase 6 commercial document model. Every transactional and master-data table is scoped by `factory_id`, has timestamp columns, and uses foreign keys for referential integrity. Money is stored as integer paise in `*_paise` columns. Physical quantities are stored as integer base units, primarily grams in `*_grams` columns, with packet counts in `quantity_packets` and packaging counts in `quantity_units`.
+The schema grew from thirty-one Phase 2 tables to the Phase 7 commercial and accountability model. Every transactional and master-data table is scoped by `factory_id`, has timestamp columns, and uses foreign keys for referential integrity. Money is stored as integer paise in `*_paise` columns. Physical quantities are stored as integer base units, primarily grams in `*_grams` columns, with packet counts in `quantity_packets` and packaging counts in `quantity_units`. Phase 7 adds signed payment direction, correction links, duplicate-key uniqueness, product category, and richer audit evidence without replacing existing records.
 
 Table groups:
 
@@ -185,8 +188,8 @@ Table groups:
 
 Constraints and indexes:
 
-- Unique codes or document numbers are scoped to `factory_id`.
-- Status columns are constrained with SQLite `CHECK` expressions.
+- Unique codes or document numbers are scoped to `factory_id`; payment duplicate keys are also factory-scoped.
+- Payment direction and status columns are constrained with SQLite `CHECK` expressions, and correction rows link back to the original receipt.
 - Quantity, price, amount, and available-stock columns have non-negative or positive checks.
 - `goods_receipt_items` requires exactly one raw-material or packaging-material reference.
 - `stock_ledger` requires exactly one material-batch or finished-good reference and a non-zero signed quantity delta.
@@ -203,7 +206,7 @@ Migration and seed workflow:
 
 `DATABASE_URL` defaults to `./data/graintrace.db`. Local database files are ignored by Git. The seed runs inside a SQLite transaction and is safe to rerun without duplicate codes, emails, or BOM lines.
 
-Phase 3 defines the calculation rules in `src/domain/` rather than in the database: integer-paise money, exact base-unit conversions, weighted average costing, production snapshots, 3% variance tolerance, GST splits, payment balances, and fulfilment limits. Phase 4 and Phase 5 workflow services write validated purchase, receipt, production, adjustment, audit, and ledger results to SQLite. Phase 6 workflow services write customer, sales order, dispatch, invoice, credit note, and payment results. Sales order references remain user-supplied and factory-scoped; invoice, credit note, payment, and dispatch numbers come from transactional sequences. Sequences are configured per factory and document type with a `CONFIG` scope row and allocated per April-March financial year as `PREFIX/YYYY-YY/NNNN`. Defaults are `TN` for invoices, `CN/TN` for credit notes, `PAY` for receipts, and `DSP` for dispatch challans. Workflow state transitions are enforced in the service layer.
+Phase 3 defines the calculation rules in `src/domain/` rather than in the database: integer-paise money, exact base-unit conversions, weighted average costing, production snapshots, 3% variance tolerance, GST splits, signed payment balances, and fulfilment limits. Phase 4 and Phase 5 workflow services write validated purchase, receipt, production, adjustment, audit, and ledger results to SQLite. Phase 6 workflow services write customer, sales order, dispatch, invoice, credit note, and payment results. Phase 7 adds signed correction records, report derivation, and auditor trails without editing posted source documents. Sales order references remain user-supplied and factory-scoped; invoice, credit note, payment, and dispatch numbers come from transactional sequences. Sequences are configured per factory and document type with a `CONFIG` scope row and allocated per April-March financial year as `PREFIX/YYYY-YY/NNNN`. Defaults are `TN` for invoices, `CN/TN` for credit notes, `PAY` for receipts, and `DSP` for dispatch challans. Workflow state transitions are enforced in the service layer.
 
 ## Authentication and authorization
 
@@ -215,39 +218,42 @@ The server reads the session with `next/headers`, joins the user's role, rebuild
 
 ### Permission matrix
 
-| Permission | Owner | Admin | Salesman | Production | Accountant |
-| --- | --- | --- | --- | --- | --- |
-| `overview:view` | Yes | Yes | Yes | Yes | Yes |
-| `orders:view` | Yes | Yes | Yes | No | Yes |
-| `orders:manage` | Yes | Yes | Yes | No | No |
-| `orders:approve` | Yes | Yes | No | No | No |
-| `purchases:view` | Yes | Yes | No | Yes | No |
-| `purchases:manage` | Yes | Yes | No | No | No |
-| `inventory:view` | Yes | Yes | No | Yes | No |
-| `inventory:manage` | Yes | Yes | No | Yes | No |
-| `recipes:view` | Yes | Yes | No | Yes | No |
-| `recipes:manage` | Yes | Yes | No | Yes | No |
-| `production:view` | Yes | Yes | No | Yes | No |
-| `production:manage` | Yes | Yes | No | Yes | No |
-| `finishedGoods:view` | Yes | Yes | No | Yes | No |
-| `invoices:view` | Yes | Yes | Yes | No | Yes |
-| `invoices:manage` | Yes | Yes | No | No | Yes |
-| `payments:view` | Yes | Yes | No | No | Yes |
-| `payments:manage` | Yes | Yes | No | No | Yes |
-| `dispatch:view` | Yes | Yes | Yes | No | Yes |
-| `dispatch:manage` | Yes | Yes | No | No | No |
-| `audit:view` | Yes | Yes | No | No | Yes |
-| `batchDna:view` | Yes | Yes | Yes | Yes | No |
-| `users:manage` | Yes | Yes | No | No | No |
+| Permission | Owner | Admin | Salesman | Production | Accountant | Auditor |
+| --- | --- | --- | --- | --- | --- | --- |
+| `overview:view` | Yes | Yes | Yes | Yes | Yes | Yes |
+| `orders:view` | Yes | Yes | Yes | No | Yes | Yes |
+| `orders:manage` | Yes | Yes | Yes | No | No | No |
+| `orders:approve` | Yes | Yes | No | No | No | No |
+| `purchases:view` | Yes | Yes | No | Yes | No | No |
+| `purchases:manage` | Yes | Yes | No | No | No | No |
+| `inventory:view` | Yes | Yes | No | Yes | No | No |
+| `inventory:manage` | Yes | Yes | No | Yes | No | No |
+| `recipes:view` | Yes | Yes | No | Yes | No | No |
+| `recipes:manage` | Yes | Yes | No | Yes | No | No |
+| `production:view` | Yes | Yes | No | Yes | No | No |
+| `production:manage` | Yes | Yes | No | Yes | No | No |
+| `finishedGoods:view` | Yes | Yes | No | Yes | No | No |
+| `invoices:view` | Yes | Yes | Yes | No | Yes | Yes |
+| `invoices:manage` | Yes | Yes | No | No | Yes | No |
+| `payments:view` | Yes | Yes | No | No | Yes | Yes |
+| `payments:manage` | Yes | Yes | No | No | Yes | No |
+| `payments:correct` | Yes | Yes | No | No | Yes | No |
+| `dispatch:view` | Yes | Yes | Yes | No | Yes | Yes |
+| `dispatch:manage` | Yes | Yes | No | No | No | No |
+| `reports:view` | Yes | Yes | No | No | Yes | Yes |
+| `reports:export` | Yes | Yes | No | No | Yes | No |
+| `audit:view` | Yes | Yes | No | No | Yes | Yes |
+| `batchDna:view` | Yes | Yes | Yes | Yes | No | Yes |
+| `users:manage` | Yes | Yes | No | No | No | No |
 
-Landing destinations are role-derived: Owner and Admin go to `/`, Salesman to `/orders`, Production to `/production`, and Accountant to `/invoices`. Navigation groups are filtered from the same permission set, but filtering is never the security boundary.
+Landing destinations are role-derived: Owner and Admin go to `/`, Salesman to `/orders`, Production to `/production`, Accountant to `/invoices`, and Auditor to `/audit`. Navigation groups are filtered from the same permission set, but filtering is never the security boundary.
 
 ## Workflow service architecture
 
 `src/lib/workflows/` is the server-only transaction boundary for live workflow writes and derived queries.
 
 - `context.ts` builds a factory-scoped actor from the validated session and checks permissions.
-- `validation.ts` defines Zod contracts for supplier, purchase order, receipt, adjustment, customer, sales order, dispatch, invoice, cancellation, and payment input.
+- `validation.ts` defines Zod contracts for supplier, purchase order, receipt, adjustment, customer, sales order, dispatch, invoice, cancellation, payment, correction, report filter, and audit filter input.
 - `api.ts` maps session and permission failures to JSON responses for route handlers.
 - `errors.ts` translates domain, Zod, authorization, and workflow errors into stable API responses.
 - `db.ts` defines the transaction and stock-target types shared by services.
@@ -257,8 +263,11 @@ Landing destinations are role-derived: Owner and Admin go to `/`, Salesman to `/
 - `inventory.ts` derives inventory views from the ledger and owns adjustment transactions.
 - `production.ts` owns production runs, variance calculation, posting, and immutable cost snapshots.
 - `numbering.ts` allocates factory-scoped, financial-year document sequences inside the caller's transaction.
-- `customers.ts`, `sales.ts`, `dispatch.ts`, `invoices.ts`, and `payments.ts` own the Phase 6 order-to-collection transactions.
+- `customers.ts`, `sales.ts`, `dispatch.ts`, `invoices.ts`, and `payments.ts` own the Phase 6 order-to-collection transactions; `payments.ts` also owns corrections and collections analytics.
 - `batch-dna.ts` builds forward and backward provenance graphs from real source records.
+- `reports.ts` builds ten filtered report definitions from live workflow data and the pure domain engine.
+- `audit-explorer.ts` builds filtered audit views and invoice/batch auditor trails from real source records.
+- `src/lib/exports/` renders the active report to CSV, Excel, and PDF with the active filters applied.
 
 Purchases do not create stock. Goods receipts create batch rows, post ledger movements with unit cost, append audit events, and recalculate order status. Inventory screens derive balances and values from ledger entries, not from cached balance columns. Adjustments require a reason, use domain stock validation, and append a ledger movement with a `STOCK_ADJUSTMENT` source.
 
@@ -286,6 +295,7 @@ Purchases do not create stock. Goods receipts create batch rows, post ledger mov
 - Phase 5 production uses lifecycle-specific action panels with planned versus actual meters and a sealed-cost inspector.
 - Phase 5 Batch DNA uses a ten-stage evidence graph with upstream/downstream traversal, edge quantities, node inspector, and provenance-gap reporting.
 - Phase 6 adds a touch-first salesman order console with live totals, status-specific order tracking, padded detail sheets, dispatch planning, invoice/candidate inspection, and collection receipt books.
+- Phase 7 adds collections aging and exposure panels, a payment correction sheet, a ten-report catalog with shared filters and export actions, and an audit explorer with event inspector and source-to-transaction trail timeline.
 - `Reveal` wraps major sections with subtle viewport motion; `useReducedMotion` disables transform/opacity animation.
 - Recharts is client-only and receives serializable preview data as props.
 
@@ -310,6 +320,7 @@ Purchases do not create stock. Goods receipts create batch rows, post ledger mov
 - `purchases-inventory.test.ts`: Phase 4 approval transitions, early/duplicate/over receipts, damaged and rejected quantities, batch creation, ledger source linkage, weighted average cost, negative-stock prevention, adjustment validation, detail history, and role authorization.
 - `production-batch-dna.test.ts`: Phase 5 production lifecycle, permission denial, source-batch planning, actual and damaged quantities, ledger references, cost snapshots, posting guards, variance flags, and Batch DNA node/edge evidence.
 - `sales-dispatch-invoices.test.ts`: Phase 6 financial-year numbering, customer status, approval separation, partial dispatch, packet ledger decrement, GST invoice posting, over-invoice prevention, receipts, overpayment prevention, credit notes, and delivery guards.
+- `finance-phase.test.ts`: signed payment corrections, duplicate reference prevention, invoice recalculation, reason-coded audit entries, report filtering, signed report totals, CSV/Excel/PDF export, audit search, and invoice/batch trails.
 - Vitest aliases `server-only` to an empty test module so server-only workflow services can be tested directly in the Node-native test environment.
 - Verification commands: `npm run typecheck`, `npm run lint`, `npm test`, `npm run build`.
 
@@ -318,11 +329,11 @@ Browser responsive and console-error checks are automated by `scripts/responsive
 ## Known architectural limitations
 
 - Authentication and authorization are implemented, but no user-management screen exists; `users:manage` is enforced only at the route layer.
-- Recipes, finished goods, and audit pages remain explicitly labeled route shells rather than repository-backed workflow screens.
+- Recipes and finished goods remain explicitly labeled route shells rather than repository-backed workflow screens; audit is a live repository-backed explorer as of Phase 7.
 - Purchases, production, inventory adjustments, and dispatch write the stock ledger; dispatch consumes whole finished-good packets in `pieces` and decrements `availableGrams` by each packet's gram weight.
 - No synchronization backend or replay endpoint exists for the offline queue; the salesman console labels queued drafts as offline.
 - Service worker caches GET responses only; it does not synchronize writes.
-- Business reports and exports remain undefined and unimplemented.
+- Report definitions are fixed in code for the supplied Phase 7 catalog; adding arbitrary user-defined reports remains outside scope.
 - Sales order and other user-entered references are user-supplied and unique within their factory; invoice, credit note, payment, and dispatch numbers use server-generated financial-year sequences.
 - The seed creates master data and numbering configuration only; operational records are created through the live workflow UI or tests.
 - `npm audit --omit=dev` reports advisories against the Next.js 14 line whose published fixes require Next.js 15.5+ or 16, plus a transitive `uuid` advisory through ExcelJS. The fixed stack was retained as instructed; these must be reviewed before public deployment.

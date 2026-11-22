@@ -11,10 +11,11 @@ mkdirSync(dirname(databasePath), { recursive: true });
 
 const sqlite = new Database(databasePath);
 sqlite.pragma("journal_mode = WAL");
-sqlite.pragma("foreign_keys = ON");
+sqlite.pragma("foreign_keys = OFF");
 
 const db = drizzle(sqlite);
 migrate(db, { migrationsFolder });
+sqlite.pragma("foreign_keys = ON");
 sqlite.close();
 
 process.stdout.write(`GrainTrace migrations applied to ${databasePath}\n`);

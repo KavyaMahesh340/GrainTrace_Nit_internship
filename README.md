@@ -2,7 +2,7 @@
 
 Every packet produced. Every gram accounted for.
 
-GRAINTRACE is a manufacturing intelligence system for small food manufacturers, organized around the material journey from salesman order through audit. This repository contains **Phase 1: Foundation & Design System**, the **Phase 2 database, authentication, and role foundation**, the **Phase 3 pure domain engine and benchmark**, **Phase 4: Purchases and Inventory**, **Phase 5: Production and Batch DNA**, and **Phase 6: Sales to Collection**. Purchases, inventory, production, traceability, sales orders, dispatch, GST invoices, and collections are live database-backed workflows; recipes, finished goods, audit, report, and offline synchronization sections remain explicitly labeled shells or limitations.
+GRAINTRACE is a manufacturing intelligence system for small food manufacturers, organized around the material journey from salesman order through audit. This repository contains **Phase 1: Foundation & Design System**, the **Phase 2 database, authentication, and role foundation**, the **Phase 3 pure domain engine and benchmark**, **Phase 4: Purchases and Inventory**, **Phase 5: Production and Batch DNA**, **Phase 6: Sales to Collection**, and **Phase 7: Finance, Reporting, and Audit**. Purchases, inventory, production, traceability, sales orders, dispatch, GST invoices, collections, payment corrections, ten reports, CSV/Excel/PDF exports, and the audit explorer are live database-backed workflows; recipes, finished goods, and offline synchronization sections remain explicitly labeled shells or limitations.
 
 ## Prerequisites
 
@@ -25,7 +25,7 @@ npm run dev
 
 Then open `http://localhost:3000`.
 
-All Drizzle migrations are committed, so `npm run db:generate` is not required for a fresh setup. `npm run db:seed` creates the demo factory, roles, five demo users, and baseline master data; it is deterministic and safe to rerun. Run generation only after changing `src/lib/db/schema.ts`:
+All Drizzle migrations are committed, so `npm run db:generate` is not required for a fresh setup. `npm run db:seed` creates the demo factory, roles, six demo users, and baseline master data; it is deterministic and safe to rerun. Run generation only after changing `src/lib/db/schema.ts`:
 
 ```powershell
 npm run db:generate
@@ -71,8 +71,9 @@ npm run db:studio
 | `/finished-goods` | Planned route shell |
 | `/invoices` | Live GST invoice, PDF, and credit-note workspace |
 | `/dispatch` | Live fulfilment planning and dispatch workspace |
-| `/collections` | Live receipt and outstanding-invoice workspace |
-| `/audit` | Planned route shell |
+| `/collections` | Live receipt, correction, aging, and outstanding-invoice workspace |
+| `/reports` | Live ten-report workspace with CSV, Excel, and PDF exports |
+| `/audit` | Live audit explorer and source-to-transaction auditor trail |
 | `/batch-dna` | Live source-to-customer traceability instrument |
 | `/offline` | Protected service-worker offline fallback |
 | `/unauthorized` | Role-based access denied state |
@@ -85,9 +86,11 @@ npm run db:studio
 | `/api/sales/*` | Server-authorized customer, sales order, option, and status APIs |
 | `/api/dispatch/*` | Server-authorized fulfilment plan, dispatch, detail, and status APIs |
 | `/api/invoices/*` | Server-authorized invoice, PDF, cancellation, option, and candidate APIs |
-| `/api/payments/*` | Server-authorized receipt and collection APIs |
+| `/api/payments/*` | Server-authorized receipt, correction, collection, and dashboard APIs |
+| `/api/reports/*` | Server-authorized report query and CSV/Excel/PDF export APIs |
+| `/api/audit/*` | Server-authorized audit entry and auditor trail APIs |
 
-All application routes except `/login`, `/session-expired`, the authentication APIs, and the root not-found state require a valid server-validated session. Purchases, inventory, production, Batch DNA, sales orders, dispatch, invoices, and collections read and write through server-side workflow services; the remaining route shells state their status without simulating workflows.
+All application routes except `/login`, `/session-expired`, the authentication APIs, and the root not-found state require a valid server-validated session. Purchases, inventory, production, Batch DNA, sales orders, dispatch, invoices, collections, reports, and audit read and write through server-side workflow services; the remaining route shells state their status without simulating workflows.
 
 ## Demo accounts
 
@@ -100,6 +103,7 @@ Run `npm run db:seed` before signing in. The sign-in console can fill these cred
 | Salesman | `salesman@graintrace.local` | `Sales!2026` | `/orders` |
 | Production | `production@graintrace.local` | `Production!2026` | `/production` |
 | Accountant | `accountant@graintrace.local` | `Accounts!2026` | `/invoices` |
+| Auditor | `auditor@graintrace.local` | `Auditor!2026` | `/audit` |
 
 Passwords are stored as bcrypt hashes. Sessions store only a SHA-256 hash of the random session token, expire after twelve hours, and are revoked on sign-out. The full permission matrix is documented in `docs/ARCHITECTURE.md`.
 
@@ -117,6 +121,8 @@ src/components/purchases/ Live purchasing workspace
 src/components/inventory/ Live inventory workspace
 src/components/production/ Live production workspace
 src/components/sales/    Salesman console and sales workflow workspaces
+src/components/reports/  Report catalog, filters, table, and export workspace
+src/components/audit/    Audit search, event inspector, and auditor trail workspace
 src/components/system/  System-level client components
 src/components/ui/      Reusable shadcn-style primitives
 src/domain/             Pure money, unit, inventory, costing, production, tax, invoice, payment, and order rules
@@ -125,13 +131,14 @@ src/lib/data/           Zod-validated preview snapshot
 src/lib/db/             Drizzle schema, connection, migrations, and seed
 src/lib/domain/         Preview schema and inferred types
 src/lib/offline/        IndexedDB mutation queue
-src/lib/workflows/      Transactional purchasing, inventory, production, sales, dispatch, invoice, and payment services
+src/lib/workflows/      Transactional purchasing, inventory, production, sales, dispatch, invoice, payment, report, and audit services
+src/lib/exports/        CSV, Excel, and PDF report renderers
 src/lib/format.ts       Presentation helpers
 src/lib/navigation.ts   Route registry
 src/tests/              Vitest setup and suites
 ```
 
-## Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, and Phase 6 scope
+## Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, and Phase 7 scope
 
 Implemented:
 
@@ -167,13 +174,16 @@ Implemented:
 - GST invoices from dispatched packets, multi-HSN support, printable PDFs, and full reversal credit notes.
 - Numbered receipts, outstanding tracking, payment posting, and overpayment prevention.
 - Server-authorized sales, dispatch, invoice, and collection APIs plus live tracking workspaces.
+- Signed payment corrections that post reversing receipt rows, mark the original as corrected, recalculate invoice balances, and append a reason-coded audit event.
+- Collections dashboard with aging buckets, customer exposure, corrected receipts, and duplicate reference protection.
+- Ten live reports covering sales, GST, collections, receivables aging, inventory value, production variance, purchases, customer ledger, product profitability, and stock movements.
+- Server-filtered CSV, Excel, and PDF report exports using the same workflows and integer-paise domain calculations as the on-screen reports.
+- Filterable audit explorer, event before/after inspector, auditor role, and source-to-transaction trails for invoices and batches.
 
 Not implemented:
 
-- Workflows outside purchases, inventory, production, Batch DNA, and Phase 6 sales-to-collection, such as recipes, finished goods, and audit reporting.
-- Report generation despite the report libraries being installed.
+- Workflows outside purchases, inventory, production, Batch DNA, sales-to-collection, finance reporting, and audit, such as recipes and finished goods.
 - Offline write synchronization; the salesman console queues drafts honestly, but replay and workflow writes require a live server.
-- Business reports and exports; the supplied calculations are implemented in the pure domain layer but no live report or export screen consumes them.
 - Upstream security advisories affecting the mandated Next.js 14 line and a transitive ExcelJS dependency; fixes require stack changes that were not authorized in Phase 1.
 
 ## Verification
@@ -206,4 +216,4 @@ npm run verify:responsive
 
 ## Git
 
-Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, and Phase 6 are committed checkpoints. Do not commit secrets or local database files. Demo passwords are documentation-only credentials for local evaluation.
+Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, and Phase 7 are committed checkpoints. Do not commit secrets or local database files. Demo passwords are documentation-only credentials for local evaluation.

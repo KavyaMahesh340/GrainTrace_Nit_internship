@@ -9,6 +9,7 @@ import {
   resolveGstJurisdiction,
   subtractPaise,
   assertUniqueIds,
+  type PaymentDirection,
   type PaymentMethod,
   type PaymentRecord,
 } from "@/domain";
@@ -109,6 +110,9 @@ function loadPaymentRecords(tx: WorkflowDb | WorkflowTransaction, invoiceId: num
       amountPaise: payments.amountPaise,
       method: payments.method,
       paidAt: payments.paidAt,
+      direction: payments.direction,
+      correctsPaymentId: payments.correctsPaymentId,
+      reason: payments.reason,
     })
     .from(payments)
     .where(eq(payments.invoiceId, invoiceId))
@@ -120,6 +124,9 @@ function loadPaymentRecords(tx: WorkflowDb | WorkflowTransaction, invoiceId: num
       amountPaise: payment.amountPaise,
       method: payment.method as PaymentMethod,
       paidAt: payment.paidAt,
+      direction: payment.direction as PaymentDirection,
+      correctsPaymentId: payment.correctsPaymentId === null ? undefined : String(payment.correctsPaymentId),
+      reason: payment.reason ?? undefined,
     }));
 }
 
@@ -583,7 +590,8 @@ export function cancelInvoice(actor: WorkflowActor, invoiceNumber: string, input
 
 export function deriveInvoiceStatus(invoice: typeof invoices.$inferSelect, paymentRecords: PaymentRecord[]) {
   if (invoice.status === "cancelled") return "cancelled";
-  const status = deriveInvoicePaymentStatus(invoice.totalPaise, paymentRecords);
+  const payable = Math.max(0, invoice.totalPaise - invoice.creditNotePaise);
+  const status = deriveInvoicePaymentStatus(payable, paymentRecords);
   if (status === "paid") return "paid";
   if (status === "partially_paid") return "partially_paid";
   return invoice.dueDate < new Date().toISOString().slice(0, 10) ? "overdue" : "issued";

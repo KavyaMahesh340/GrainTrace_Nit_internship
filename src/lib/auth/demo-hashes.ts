@@ -6,6 +6,7 @@ export const DEMO_PASSWORD_HASHES: Record<RoleName, string> = {
   salesman: "$2b$10$pHHjj.P82A6KbTXUfUkeG.xN8F.yfRr0JLlUkKp04odmvWXa8D/wm",
   production: "$2b$10$E8.XTT21ytOl.dL2ywzAXe1bm2Edduey5Evt8LoMvYh7UKTft69d2",
   accountant: "$2b$10$OGVmM.RAQNUpl2TyJN/q5exN8njKccK1mqFZkGJVc9VRynpWPZ/AS",
+  auditor: "$2b$10$/R6PKfU.WgHlIMXPzpoNmescso0qF1EYRKiPR./nZLJz40PdIEfdW",
 };
 
 export const DUMMY_PASSWORD_HASH = DEMO_PASSWORD_HASHES.owner;

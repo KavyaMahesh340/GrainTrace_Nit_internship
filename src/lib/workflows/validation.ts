@@ -246,6 +246,31 @@ export const paymentInputSchema = z.object({
   amountPaise: positiveInteger,
   method: z.enum(["cash", "upi", "bank_transfer", "cheque", "other"]),
   referenceNo: z.string().trim().max(120).optional().default(""),
+  notes: z.string().trim().max(500).optional().default(""),
+});
+
+export const paymentCorrectionSchema = z.object({
+  paymentNumber: z.string().trim().min(2).max(64),
+  correctedAt: dateValue,
+  amountPaise: positiveInteger,
+  reason: z.string().trim().min(3).max(500),
+});
+
+export const reportFilterSchema = z.object({
+  dateFrom: optionalDate,
+  dateTo: optionalDate,
+  customerId: z.coerce.number().int().positive().optional(),
+  productId: z.coerce.number().int().positive().optional(),
+  category: z.string().trim().max(80).optional(),
+});
+
+export const auditFilterSchema = z.object({
+  query: z.string().trim().max(120).optional(),
+  action: z.string().trim().max(80).optional(),
+  entityType: z.string().trim().max(80).optional(),
+  userId: z.coerce.number().int().positive().optional(),
+  dateFrom: optionalDate,
+  dateTo: optionalDate,
 });
 
 export type CustomerInput = z.infer<typeof customerInputSchema>;
@@ -260,3 +285,6 @@ export type InvoiceLineInput = z.infer<typeof invoiceLineSchema>;
 export type InvoiceInput = z.infer<typeof invoiceInputSchema>;
 export type InvoiceCancelInput = z.infer<typeof invoiceCancelSchema>;
 export type PaymentInput = z.infer<typeof paymentInputSchema>;
+export type PaymentCorrectionInput = z.infer<typeof paymentCorrectionSchema>;
+export type ReportFilterInput = z.infer<typeof reportFilterSchema>;
+export type AuditFilterInput = z.infer<typeof auditFilterSchema>;

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { apiErrorResponse, readApiJson, requireApiActor } from "@/lib/workflows/api";
 import { createPayment, listPayments } from "@/lib/workflows/payments";
-import type { PaymentInput } from "@/lib/workflows/validation";
+import { paymentInputSchema } from "@/lib/workflows/validation";
 
 export const runtime = "nodejs";
 
@@ -17,7 +17,8 @@ export async function POST(request: Request) {
   const body = await readApiJson(request);
   if (body instanceof NextResponse) return body;
   try {
-    const payment = createPayment(actor, body as PaymentInput);
+    const input = paymentInputSchema.parse(body);
+    const payment = createPayment(actor, input);
     return NextResponse.json({ ok: true, payment }, { status: 201 });
   } catch (error) {
     return apiErrorResponse(error);

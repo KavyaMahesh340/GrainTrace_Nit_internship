@@ -4,7 +4,7 @@
 
 Source of truth: `docs/PROBLEM.md`. The original file was absent from the workspace; the supplied brief was preserved there and used verbatim.
 
-GRAINTRACE is a manufacturing intelligence system for small food manufacturers. Phase 1 delivered the foundation, design system, application shell, factory overview, and honest route structure. Phase 2 delivered the normalized database, authentication, expiring sessions, and server-enforced role permissions. Phase 3 delivered the pure domain engine and deterministic benchmark. Phase 4 delivered live purchasing and inventory workflow services, APIs, and UI screens. Phase 5 delivered live production execution and Batch DNA traceability. Phase 6 adds sales orders, approval control, dispatch, GST invoices, credit notes, collections, a salesman mobile console, and live order tracking. Recipes and finished-goods route shells remain intentionally unimplemented.
+GRAINTRACE is a manufacturing intelligence system for small food manufacturers. Phase 1 delivered the foundation, design system, application shell, factory overview, and honest route structure. Phase 2 delivered the normalized database, authentication, expiring sessions, and server-enforced role permissions. Phase 3 delivered the pure domain engine and deterministic benchmark. Phase 4 delivered live purchasing and inventory workflow services, APIs, and UI screens. Phase 5 delivered live production execution and Batch DNA traceability. Phase 6 delivered sales orders, approval control, dispatch, GST invoices, credit notes, collections, a salesman mobile console, and live order tracking. Phase 7 adds audited payment corrections, a collections dashboard, ten financial and operational reports, CSV/Excel/PDF exports, and a live audit explorer with source-to-transaction trails. Recipes and finished-goods route shells remain intentionally unimplemented.
 
 A requirement is marked **explicit** when stated in the brief and **implied** when directly named by the material-journey chain but lacking detail. Implied items are recorded for planning only and are not implemented or expanded with invented rules.
 
@@ -28,7 +28,7 @@ A requirement is marked **explicit** when stated in the brief and **implied** wh
 | FR-14 | Create a README with exact setup instructions. | Explicit | Implemented |
 | FR-15 | Provide PWA support with an IndexedDB offline queue. | Explicit | Foundation implemented |
 | FR-16 | Validate preview data with Zod. | Stack requirement | Implemented |
-| FR-17 | Make ExcelJS and `@react-pdf/renderer` available for later report work. | Stack requirement | Dependencies installed; no reports implemented |
+| FR-17 | Make ExcelJS and `@react-pdf/renderer` available for report work. | Stack requirement | Implemented in Phase 7 for live CSV/Excel/PDF report exports |
 | FR-18 | Do not implement all business workflows yet. | Explicit | Honored |
 
 ## Product identity requirements
@@ -54,9 +54,9 @@ A requirement is marked **explicit** when stated in the brief and **implied** wh
 | Finance / invoicing role | Implied by “invoice” stage. | Stage shown in preview flow; permissions not defined. |
 | Dispatch role | Implied by “dispatch” stage. | Stage shown in preview flow; permissions not defined. |
 | Collections role | Implied by “collection” stage. | Stage shown in preview flow; permissions not defined. |
-| Auditor | Implied by “audit” stage. | Stage shown in preview flow; permissions not defined. |
+| Auditor | Implied by “audit” stage. | Phase 7 adds a read-only auditor role for reports and audit trails. |
 
-The brief does not specify role permissions, authentication, assignment rules, or approval authority. None are invented or implemented.
+The brief does not specify role permissions, authentication, assignment rules, or approval authority. Phase 1 invented none; later phases defined narrow role permissions through explicit phase briefs.
 
 ## Workflows
 
@@ -86,7 +86,7 @@ The material journey is explicitly defined as:
 | WF-08 | Invoice | Preview flow stage and `/invoices` route. |
 | WF-09 | Dispatch | Preview flow stage and `/dispatch` route. |
 | WF-10 | Collection | Preview flow stage and `/collections` route. |
-| WF-11 | Audit | Preview flow stage and `/audit` route. |
+| WF-11 | Audit | Phase 7 live audit explorer, event inspector, and source-to-transaction trail at `/audit`. |
 | WF-12 | Batch DNA trace | Live source-to-customer trace engine and instrument at `/batch-dna`. |
 
 No transition rules, state machines, approval conditions, document flows, or role assignments were specified, so none are implemented.
@@ -116,7 +116,7 @@ Items requiring formulas in later phases include, but are not limited to, yield,
 
 No report names, fields, layouts, filters, or output rules were supplied.
 
-ExcelJS and `@react-pdf/renderer` are installed because they are part of the fixed stack, but Phase 1 produces no Excel or PDF reports. Report specifications must be supplied before implementation.
+ExcelJS and `@react-pdf/renderer` are installed because they are part of the fixed stack. Phase 1 produced no Excel or PDF reports; Phase 7 supplies the report specifications and consumes both libraries for live exports.
 
 ## Benchmarks and quality requirements
 
@@ -296,3 +296,25 @@ The Phase 6 brief supplied in conversation is the active source for this section
 | P6-FR-15 | Preserve Phase 1–5 behavior and benchmark results, then verify and commit Phase 6. | Implemented |
 
 Recipes, finished goods, audit reporting, live report exports, and offline write synchronization remain outside Phase 6. Offline drafts are queued locally and are labelled as queued rather than synchronized.
+
+## Phase 7 requirements
+
+The Phase 7 brief supplied in conversation is the active source for this section. It extends the delivered sales-to-collection chain with non-destructive corrections, management reporting, exports, and auditability.
+
+| ID | Requirement | Status |
+| --- | --- | --- |
+| P7-FR-01 | Correct posted receipts by appending a signed debit row with a reason, audit event, and original-payment link instead of deleting or editing the receipt. | Implemented |
+| P7-FR-02 | Prevent duplicate payment references with a factory-scoped unique key and reject corrections larger than the original receipt. | Implemented |
+| P7-FR-03 | Recalculate invoice paid amount and payment status after every receipt or correction, with credit notes reducing the payable balance. | Implemented |
+| P7-FR-04 | Provide a collections dashboard with due, overdue, collected, corrected, aging-bucket, and per-customer exposure views. | Implemented |
+| P7-FR-05 | Provide ten reports: sales register, GST summary, collections, receivables aging, inventory valuation, production cost variance, purchase register, customer ledger, product profitability, and stock movements. | Implemented |
+| P7-FR-06 | Filter reports by date range, customer, product, and product category from server-side workflow queries. | Implemented |
+| P7-FR-07 | Export the active report with the active filters as CSV, Excel, or PDF. | Implemented |
+| P7-FR-08 | Add a read-only auditor role with report, audit, order, invoice, payment, dispatch, and trace visibility but no write permissions. | Implemented |
+| P7-FR-09 | Search audit entries by action, entity, actor, date, and free text and inspect before/after values and metadata. | Implemented |
+| P7-FR-10 | Assemble auditor trails for invoices and batches from real source documents, ledger events, tax documents, receipts, corrections, and audit entries. | Implemented |
+| P7-FR-11 | Enforce server-side session and role permissions on every Phase 7 page and API route. | Implemented |
+| P7-FR-12 | Test correction reversals, duplicate references, signed report totals, exports, audit search, and trails. | Implemented |
+| P7-FR-13 | Preserve Phase 1–6 behavior and benchmark results, then verify and commit Phase 7. | Implemented |
+
+Recipes, finished goods, and offline write synchronization remain outside Phase 7. Offline drafts are queued locally and are labelled as queued rather than synchronized.

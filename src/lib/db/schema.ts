@@ -31,7 +31,7 @@ export const roles = sqliteTable(
     ...timestamps,
   },
   (table) => [
-    check("roles_name_check", sql`${table.name} in ('owner', 'admin', 'salesman', 'production', 'accountant')`),
+    check("roles_name_check", sql`${table.name} in ('owner', 'admin', 'salesman', 'production', 'accountant', 'auditor')`),
   ],
 );
 
@@ -156,6 +156,7 @@ export const products = sqliteTable(
     description: text("description"),
     packetGrams: integer("packet_grams").notNull(),
     hsnCode: text("hsn_code"),
+    category: text("category").notNull().default("General"),
     ...timestamps,
   },
   (table) => [
@@ -1001,6 +1002,12 @@ export const payments = sqliteTable(
     amountPaise: integer("amount_paise").notNull(),
     method: text("method").notNull(),
     referenceNo: text("reference_no"),
+    notes: text("notes").notNull().default(""),
+    direction: text("direction").notNull().default("credit"),
+    status: text("status").notNull().default("posted"),
+    correctsPaymentId: integer("corrects_payment_id"),
+    reason: text("reason"),
+    duplicateKey: text("duplicate_key"),
     recordedByUserId: integer("recorded_by_user_id")
       .notNull()
       .references(() => users.id, { onDelete: "restrict" }),
@@ -1008,11 +1015,18 @@ export const payments = sqliteTable(
   },
   (table) => [
     uniqueIndex("payments_factory_number_unique").on(table.factoryId, table.paymentNumber),
+    uniqueIndex("payments_factory_duplicate_unique").on(table.factoryId, table.duplicateKey),
     index("payments_factory_idx").on(table.factoryId),
     index("payments_invoice_idx").on(table.invoiceId),
     index("payments_customer_idx").on(table.customerId),
+    index("payments_correction_idx").on(table.correctsPaymentId),
     check("payments_amount_check", sql`${table.amountPaise} > 0`),
     check("payments_method_check", sql`${table.method} in ('cash', 'upi', 'bank_transfer', 'cheque', 'other')`),
+    check("payments_direction_check", sql`${table.direction} in ('credit', 'debit')`),
+    check(
+      "payments_status_check",
+      sql`${table.status} in ('posted', 'corrected', 'correction')`,
+    ),
   ],
 );
 
@@ -1089,6 +1103,10 @@ export const auditLog = sqliteTable(
     entityType: text("entity_type").notNull(),
     entityId: integer("entity_id"),
     severity: text("severity").notNull().default("info"),
+    actorRole: text("actor_role"),
+    reason: text("reason"),
+    beforeJson: text("before_json"),
+    afterJson: text("after_json"),
     metadataJson: text("metadata_json").notNull().default("{}"),
     createdAt: text("created_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
   },

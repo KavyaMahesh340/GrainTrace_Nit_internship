@@ -36,6 +36,13 @@
       "when": 1795349410881,
       "tag": "0004_damp_corsair",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1795353247980,
+      "tag": "0005_light_gorilla_man",
+      "breakpoints": true
     }
   ]
 }

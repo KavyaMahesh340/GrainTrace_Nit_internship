@@ -118,6 +118,25 @@ Delivered scope:
 
 **Exit criteria:** schema migration applies, typecheck and lint pass, tests and Phase 3 benchmark pass, production build succeeds, and Phase 6 is committed before stopping.
 
+## Phase 7 — Finance, Reporting, and Audit (completed)
+
+The active Phase 7 brief extends the material journey after collection with corrective finance workflows, accountability reporting, and real audit navigation while preserving all earlier phases.
+
+Delivered scope:
+
+1. A schema and migration extension for signed payment direction, correction links and reasons, duplicate payment keys, audit actor role/reason/before/after evidence, and product category.
+2. Pure-domain correction rules that append debit receipts, prevent over-correction, recalculate signed paid totals, and derive credit-note-aware invoice payment status.
+3. Transactional payment correction APIs and workflows that mark the original receipt as corrected, recalculate the invoice, and append a reason-coded audit event.
+4. A collections dashboard with due, overdue, collected, corrected, aging-bucket, and per-customer exposure views plus duplicate reference protection.
+5. A server-only report engine with ten report definitions covering sales, GST, collections, receivables aging, inventory value, production cost variance, purchases, customer ledger, product profitability, and stock movements.
+6. Shared report filters for date range, customer, product, and category, applied consistently to on-screen reports and exports.
+7. CSV, Excel, and PDF export services and server-authorized export APIs using the active report and filters.
+8. A read-only auditor role and permission additions for payment correction, report viewing/export, and audit access.
+9. A live audit explorer with event filters, before/after inspector, invoice and batch auditor trails, and source-document links.
+10. Workflow tests for corrections, duplicate references, signed report totals, CSV/Excel/PDF output, audit search, and source-to-transaction trails.
+
+**Exit criteria:** schema migration applies, typecheck and lint pass, tests and Phase 3 benchmark pass, production build succeeds, and Phase 7 is committed before stopping.
+
 No subsequent phase begins automatically.
 
 ## Dependency policy

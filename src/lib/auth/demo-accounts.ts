@@ -6,6 +6,7 @@ export const DEMO_ACCOUNTS = [
   { role: "salesman", email: "salesman@graintrace.local", password: "Sales!2026" },
   { role: "production", email: "production@graintrace.local", password: "Production!2026" },
   { role: "accountant", email: "accountant@graintrace.local", password: "Accounts!2026" },
+  { role: "auditor", email: "auditor@graintrace.local", password: "Auditor!2026" },
 ] as const satisfies readonly {
   role: RoleName;
   email: string;

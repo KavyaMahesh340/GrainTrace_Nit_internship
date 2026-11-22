@@ -38,7 +38,8 @@ export const navigationGroups: NavigationGroup[] = [
       { label: "Invoices", href: "/invoices", index: "08", phase: "Live", permission: "invoices:view" },
       { label: "Collections", href: "/collections", index: "10", phase: "Live", permission: "payments:view" },
       { label: "Batch DNA", href: "/batch-dna", index: "12", phase: "Live", permission: "batchDna:view" },
-      { label: "Audit", href: "/audit", index: "11", phase: "Planned", permission: "audit:view" },
+      { label: "Audit", href: "/audit", index: "11", phase: "Live", permission: "audit:view" },
+      { label: "Reports", href: "/reports", index: "13", phase: "Live", permission: "reports:view" },
     ],
   },
 ];

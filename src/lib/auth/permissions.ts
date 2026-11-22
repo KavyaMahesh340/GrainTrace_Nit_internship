@@ -1,4 +1,4 @@
-export const ROLES = ["owner", "admin", "salesman", "production", "accountant"] as const;
+export const ROLES = ["owner", "admin", "salesman", "production", "accountant", "auditor"] as const;
 
 export type RoleName = (typeof ROLES)[number];
 
@@ -20,8 +20,11 @@ export const PERMISSIONS = [
   "invoices:manage",
   "payments:view",
   "payments:manage",
+  "payments:correct",
   "dispatch:view",
   "dispatch:manage",
+  "reports:view",
+  "reports:export",
   "audit:view",
   "batchDna:view",
   "users:manage",
@@ -35,6 +38,7 @@ export const ROLE_LABELS: Record<RoleName, string> = {
   salesman: "Salesman",
   production: "Production",
   accountant: "Accountant",
+  auditor: "Auditor",
 };
 
 const OPERATIONS: readonly Permission[] = [
@@ -55,8 +59,11 @@ const OPERATIONS: readonly Permission[] = [
   "invoices:manage",
   "payments:view",
   "payments:manage",
+  "payments:correct",
   "dispatch:view",
   "dispatch:manage",
+  "reports:view",
+  "reports:export",
   "audit:view",
   "batchDna:view",
 ];
@@ -91,8 +98,21 @@ const PERMISSION_MATRIX: Record<RoleName, readonly Permission[]> = {
     "invoices:manage",
     "payments:view",
     "payments:manage",
+    "payments:correct",
     "dispatch:view",
+    "reports:view",
+    "reports:export",
     "audit:view",
+  ],
+  auditor: [
+    "overview:view",
+    "orders:view",
+    "invoices:view",
+    "payments:view",
+    "dispatch:view",
+    "reports:view",
+    "audit:view",
+    "batchDna:view",
   ],
 };
 
@@ -102,6 +122,7 @@ const LANDING_PATHS: Record<RoleName, string> = {
   salesman: "/orders",
   production: "/production",
   accountant: "/invoices",
+  auditor: "/audit",
 };
 
 export function permissionsFor(role: RoleName): Permission[] {

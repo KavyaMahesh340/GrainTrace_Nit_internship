@@ -30,6 +30,7 @@ const roleSeeds: { name: RoleName; description: string }[] = [
   { name: "salesman", description: "Creates and tracks customer orders." },
   { name: "production", description: "Manages recipes, inventory, and production runs." },
   { name: "accountant", description: "Manages invoices, collections, and audit review." },
+  { name: "auditor", description: "Reviews reports and the chronological transaction trail." },
 ];
 
 const fullNames: Record<RoleName, string> = {
@@ -38,6 +39,7 @@ const fullNames: Record<RoleName, string> = {
   salesman: "Vikram Rao",
   production: "Meera Nair",
   accountant: "Kabir Shah",
+  auditor: "Nisha Desai",
 };
 
 export function seedDatabase() {
@@ -253,6 +255,7 @@ export function seedDatabase() {
           description: "Demonstration whole wheat atta packet.",
           packetGrams: 500,
           hsnCode: "110100",
+          category: "Atta",
           createdAt: SEED_TIME,
           updatedAt: SEED_TIME,
         })
