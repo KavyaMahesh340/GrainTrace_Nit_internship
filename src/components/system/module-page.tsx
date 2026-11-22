@@ -47,7 +47,7 @@ export function ModulePage({
         <EmptyState
           code="Not yet implemented"
           title="This workflow is scoped, not simulated."
-          description="This route is reserved for a future workflow stage. The functional requirements are documented in docs/REQUIREMENTS.md; no placeholder controls are presented as working actions."
+          description="This route is reserved for a planned workflow stage. The functional requirements are documented in docs/REQUIREMENTS.md; no placeholder controls are presented as working actions."
           actionLabel="Back to factory overview"
           actionHref="/"
         />

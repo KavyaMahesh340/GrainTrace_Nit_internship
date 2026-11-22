@@ -81,15 +81,23 @@ Delivered:
 
 **Exit criteria:** schema migration applies, typecheck and lint pass, tests and Phase 3 benchmark pass, production build succeeds, and Phase 4 is committed before stopping.
 
-## Phase 5 — Invoice, dispatch, collection, and audit
+## Phase 5 — Production and Batch DNA (completed)
 
-Planned scope:
+The active Phase 5 brief supersedes the earlier invoice/dispatch/collection/audit plan. It narrows the phase to production execution and real source-to-customer traceability.
 
-- Invoice generation and collection tracking.
-- Dispatch challans and delivery confirmation.
-- Append-only audit events across every remaining state change.
-- Reconciliation views that prove quantity and transaction accountability.
-- ExcelJS exports, PDF documents, offline synchronization, and accessibility/performance audits against supplied benchmarks.
+Delivered scope:
+
+1. A production schema extension for actual output, damaged output, labour, gas, selling price, posting time, planned material lines, and immutable cost snapshots.
+2. Production workflow services with draft, planned, in-progress, completed, and posted states, server-side permission checks, Zod validation, and audit recording.
+3. Atomic posting that consumes source batches, records material damage separately, posts finished goods and output damage, seals the cost snapshot, and prevents double posting.
+4. Three-percent material and yield variance flagging using the Phase 3 domain rules.
+5. Live `/production` workspace with lifecycle actions, run inspection, planned versus actual output, exception watch, and cost evidence.
+6. A Batch DNA trace service that joins suppliers, receipts, lots, ledger entries, recipes, runs, consumption, yield, finished goods, dispatch, invoices, and customers into real nodes and edges.
+7. Live `/batch-dna` instrument with upstream/downstream traversal, clickable evidence nodes, edge quantities, risk flags, provenance gaps, and record links.
+8. Server-authorized APIs for production reads and writes plus trace index/detail reads.
+9. Workflow tests covering the full production lifecycle, posting guards, ledger references, cost snapshots, variance flags, and traceability relationships.
+
+**Exit criteria:** schema migration applies, typecheck and lint pass, tests and Phase 3 benchmark pass, production build succeeds, and Phase 5 is committed before stopping.
 
 No subsequent phase begins automatically.
 

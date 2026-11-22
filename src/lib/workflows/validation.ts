@@ -102,8 +102,59 @@ export const inventoryAdjustmentInputSchema = z.object({
   unitCostPaise: nonNegativeInteger.optional(),
 });
 
+const productionItemId = z
+  .string()
+  .trim()
+  .regex(/^(raw|packaging):[1-9]\d*$/, "Use a valid material item key.");
+
+export const productionRunInputSchema = z.object({
+  runNumber: reference,
+  recipeId: positiveId,
+  plannedOutputPackets: positiveInteger.max(100_000),
+  sellingPricePaise: positiveInteger.optional(),
+  notes: z.string().trim().max(500).optional().default(""),
+});
+
+export const productionPlanLineSchema = z.object({
+  itemId: productionItemId,
+  batchId: positiveId,
+});
+
+export const productionPlanInputSchema = z.object({
+  lines: z.array(productionPlanLineSchema).min(1),
+});
+
+export const productionCompletionLineSchema = z.object({
+  itemId: productionItemId,
+  actualQuantity: positiveInteger,
+  damagedQuantity: nonNegativeInteger.default(0),
+});
+
+export const productionCompletionInputSchema = z.object({
+  lines: z.array(productionCompletionLineSchema).min(1),
+  goodOutputPackets: positiveInteger,
+  damagedOutputPackets: nonNegativeInteger.default(0),
+  labourPaise: nonNegativeInteger.default(0),
+  gasPaise: nonNegativeInteger.default(0),
+  notes: z.string().trim().max(500).optional().default(""),
+});
+
+export const productionPostingInputSchema = z.object({
+  finishedBatchCode: reference,
+  packedOn: dateValue,
+  expiresAt: optionalDate,
+  notes: z.string().trim().max(500).optional().default(""),
+});
+
+export const productionStatusSchema = z.enum(["planned", "in_progress"]);
+
 export type SupplierInput = z.infer<typeof supplierInputSchema>;
 export type PurchaseOrderInput = z.infer<typeof purchaseOrderInputSchema>;
 export type PurchaseOrderStatusInput = z.infer<typeof purchaseOrderStatusSchema>;
 export type GoodsReceiptInput = z.infer<typeof goodsReceiptInputSchema>;
 export type InventoryAdjustmentInput = z.infer<typeof inventoryAdjustmentInputSchema>;
+export type ProductionRunInput = z.infer<typeof productionRunInputSchema>;
+export type ProductionPlanInput = z.infer<typeof productionPlanInputSchema>;
+export type ProductionCompletionInput = z.infer<typeof productionCompletionInputSchema>;
+export type ProductionPostingInput = z.infer<typeof productionPostingInputSchema>;
+export type ProductionStatusInput = z.infer<typeof productionStatusSchema>;

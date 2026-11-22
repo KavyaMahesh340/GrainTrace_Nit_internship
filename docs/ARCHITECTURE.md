@@ -4,7 +4,7 @@
 
 GRAINTRACE is a material-journey accountability system. The architecture must make quantity and transaction provenance easy to trace from salesman order through audit, while the interface presents that provenance as an operational surface rather than a generic dashboard.
 
-Phase 1 established the runtime, design tokens, route topology, data workflow, and honest preview experience. Phase 2 added the normalized database, authentication, expiring sessions, and server-enforced role permissions. Phase 4 adds live purchasing and inventory workflows built on the Phase 3 pure domain engine; other manufacturing workflows remain unimplemented.
+Phase 1 established the runtime, design tokens, route topology, data workflow, and honest preview experience. Phase 2 added the normalized database, authentication, expiring sessions, and server-enforced role permissions. Phase 4 added live purchasing and inventory workflows. Phase 5 adds production execution and Batch DNA traceability built on the Phase 3 pure domain engine; other manufacturing workflows remain unimplemented.
 
 ## Stack decisions
 
@@ -123,7 +123,7 @@ Domain input (plain data)
   → plain immutable result or explicit DomainError
 ```
 
-Phase 4 workflow services own transactions and call these functions. The domain layer never calls Drizzle, Next.js, React, or browser APIs, so the same rules can be tested deterministically without a running application.
+Phase 4 and Phase 5 workflow services own transactions and call these functions. The domain layer never calls Drizzle, Next.js, React, or browser APIs, so the same rules can be tested deterministically without a running application.
 
 ## Route map
 
@@ -136,18 +136,20 @@ Phase 4 workflow services own transactions and call these functions. The domain 
 | `/api/auth/logout` | Server-side session revocation and cookie clearing | Implemented |
 | `/api/purchases/*` | Supplier, order, status, and receipt writes/reads | Implemented in Phase 4 |
 | `/api/inventory/*` | Stock queries, detail, overview, and adjustments | Implemented in Phase 4 |
+| `/api/production/*` | Production runs, planning, status, completion, posting, overview, and options | Implemented in Phase 5 |
+| `/api/batch-dna/*` | Batch trace index and detail | Implemented in Phase 5 |
 | `/` | Protected factory overview | Implemented with preview data |
-| `/orders` | Salesman orders | Route shell; workflow in Phase 2 |
+| `/orders` | Salesman orders | Route shell; workflow planned |
 | `/purchases` | Purchase orders, receipts, and suppliers | Implemented in Phase 4 |
 | `/inventory` | Raw, packaging, and finished-goods stock | Implemented in Phase 4 |
-| `/recipes` | Recipe stage | Route shell; workflow in Phase 2 |
-| `/production` | Production stage | Route shell; workflow in Phase 2 |
-| `/finished-goods` | Finished goods | Route shell; workflow in Phase 2 |
-| `/invoices` | Invoice stage | Route shell; workflow in Phase 2 |
-| `/dispatch` | Dispatch stage | Route shell; workflow in Phase 2 |
-| `/collections` | Collection stage | Route shell; workflow in Phase 2 |
-| `/audit` | Audit stage | Route shell; workflow in Phase 2 |
-| `/batch-dna` | Signature trace concept | Concept visualization only |
+| `/recipes` | Recipe stage | Route shell; workflow planned |
+| `/production` | Production stage | Implemented in Phase 5 |
+| `/finished-goods` | Finished goods | Route shell; workflow planned |
+| `/invoices` | Invoice stage | Route shell; workflow planned |
+| `/dispatch` | Dispatch stage | Route shell; workflow planned |
+| `/collections` | Collection stage | Route shell; workflow planned |
+| `/audit` | Audit stage | Route shell; workflow planned |
+| `/batch-dna` | Signature trace instrument | Implemented in Phase 5 |
 | `/offline` | Offline fallback | Implemented |
 
 Overview links preserve preview references in query strings (for example `/orders?focus=SO-2481`). The destination route reads and displays the reference. This makes each link functional without pretending the workflow exists.
@@ -259,7 +261,9 @@ Purchases do not create stock. Goods receipts create batch rows, post ledger mov
 - `UserMenu` opens a confirmation sheet before posting to `/api/auth/logout`.
 - Login and session-expired pages use standalone dark surface compositions outside `AppShell`.
 - Overview sections use different structures: split editorial heading, split chart, horizontal flow rail, table, meter list, dark exception ledger, signal action band, timeline, and Batch DNA strand.
-- Phase 4 workspaces use dense document tables, workflow tabs, inline status badges, detail sheets, batch/movement inspectors, and unit-aware financial columns.
+- Phase 4 and Phase 5 workspaces use dense document tables, workflow tabs, inline status badges, detail sheets, batch/movement inspectors, and unit-aware financial columns.
+- Phase 5 production uses lifecycle-specific action panels with planned versus actual meters and a sealed-cost inspector.
+- Phase 5 Batch DNA uses a ten-stage evidence graph with upstream/downstream traversal, edge quantities, node inspector, and provenance-gap reporting.
 - `Reveal` wraps major sections with subtle viewport motion; `useReducedMotion` disables transform/opacity animation.
 - Recharts is client-only and receives serializable preview data as props.
 
@@ -282,6 +286,7 @@ Purchases do not create stock. Goods receipts create batch rows, post ledger mov
 - `auth.test.ts`: password hashing/verification, generic failures, role-derived login redirects, absent/malformed/expired/revoked sessions, server permission matrix, and duplicate-user rejection.
 - `benchmark.test.ts`: deterministic Phase 3 acceptance values, conversion errors, stock protection, tax rounding, weighted average, cost snapshots, variance tolerance, partial dispatch, payments, outstanding balances, and duplicate posting.
 - `purchases-inventory.test.ts`: Phase 4 approval transitions, early/duplicate/over receipts, damaged and rejected quantities, batch creation, ledger source linkage, weighted average cost, negative-stock prevention, adjustment validation, detail history, and role authorization.
+- `production-batch-dna.test.ts`: Phase 5 production lifecycle, permission denial, source-batch planning, actual and damaged quantities, ledger references, cost snapshots, posting guards, variance flags, and Batch DNA node/edge evidence.
 - Vitest aliases `server-only` to an empty test module so server-only workflow services can be tested directly in the Node-native test environment.
 - Verification commands: `npm run typecheck`, `npm run lint`, `npm test`, `npm run build`.
 

@@ -11,7 +11,7 @@ export default async function InvoicesPage({ searchParams }: { searchParams: { f
       permission="invoices:view"
       code="08"
       title="Invoices"
-      description="Dispatch-ready orders become invoices. Tax, valuation, and collection linkage are Phase 2 workflows."
+      description="Dispatch-ready orders become invoices. Tax, valuation, and collection linkage are planned workflows."
       focusLabel="Invoice reference"
       focusValue={searchParams.focus}
     />

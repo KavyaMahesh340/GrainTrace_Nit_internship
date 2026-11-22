@@ -2,7 +2,7 @@
 
 Every packet produced. Every gram accounted for.
 
-GRAINTRACE is a manufacturing intelligence system for small food manufacturers, organized around the material journey from salesman order through audit. This repository contains **Phase 1: Foundation & Design System**, the **Phase 2 database, authentication, and role foundation**, the **Phase 3 pure domain engine and benchmark**, and **Phase 4: Purchases and Inventory**. Purchases and inventory are live database-backed workflows; other operational sections remain explicitly labeled route shells.
+GRAINTRACE is a manufacturing intelligence system for small food manufacturers, organized around the material journey from salesman order through audit. This repository contains **Phase 1: Foundation & Design System**, the **Phase 2 database, authentication, and role foundation**, the **Phase 3 pure domain engine and benchmark**, **Phase 4: Purchases and Inventory**, and **Phase 5: Production and Batch DNA**. Purchases, inventory, production, and traceability are live database-backed workflows; other operational sections remain explicitly labeled route shells.
 
 ## Prerequisites
 
@@ -63,25 +63,27 @@ npm run db:studio
 | `/login` | Standalone role-aware sign-in console |
 | `/session-expired` | Expired or revoked session state |
 | `/` | Protected factory overview with preview data |
-| `/orders` | Phase 2 route shell |
+| `/orders` | Planned route shell |
 | `/purchases` | Live purchase order, goods receipt, and supplier workflow |
 | `/inventory` | Live stock, batch, movement, alert, and adjustment workspace |
-| `/recipes` | Phase 2 route shell |
-| `/production` | Phase 2 route shell |
-| `/finished-goods` | Phase 2 route shell |
-| `/invoices` | Phase 2 route shell |
-| `/dispatch` | Phase 2 route shell |
-| `/collections` | Phase 2 route shell |
-| `/audit` | Phase 2 route shell |
-| `/batch-dna` | Batch DNA concept visualization |
+| `/recipes` | Planned route shell |
+| `/production` | Live production planning, consumption, yield, posting, and cost workspace |
+| `/finished-goods` | Planned route shell |
+| `/invoices` | Planned route shell |
+| `/dispatch` | Planned route shell |
+| `/collections` | Planned route shell |
+| `/audit` | Planned route shell |
+| `/batch-dna` | Live source-to-customer traceability instrument |
 | `/offline` | Protected service-worker offline fallback |
 | `/unauthorized` | Role-based access denied state |
 | `/api/auth/login` | Validates credentials and sets the httpOnly session cookie |
 | `/api/auth/logout` | Revokes the session on the server and clears the cookie |
 | `/api/purchases/*` | Server-authorized supplier, purchase order, status, and goods receipt APIs |
 | `/api/inventory/*` | Server-authorized stock query, detail, overview, and adjustment APIs |
+| `/api/production/*` | Server-authorized production run, planning, completion, posting, overview, and option APIs |
+| `/api/batch-dna/*` | Server-authorized batch trace index and detail APIs |
 
-All application routes except `/login`, `/session-expired`, the authentication APIs, and the root not-found state require a valid server-validated session. Purchases and inventory write through server-side workflow services; the remaining route shells are real destinations that state their status without simulating workflows.
+All application routes except `/login`, `/session-expired`, the authentication APIs, and the root not-found state require a valid server-validated session. Purchases, inventory, production, and Batch DNA write or read through server-side workflow services; the remaining route shells are real destinations that state their status without simulating workflows.
 
 ## Demo accounts
 
@@ -123,7 +125,7 @@ src/lib/navigation.ts   Route registry
 src/tests/              Vitest setup and suites
 ```
 
-## Phase 1, Phase 2, Phase 3, and Phase 4 scope
+## Phase 1, Phase 2, Phase 3, Phase 4, and Phase 5 scope
 
 Implemented:
 
@@ -146,11 +148,15 @@ Implemented:
 - Transactional supplier, purchase order, approval-state, and goods receipt workflows with duplicate and over-receipt guards.
 - Batch-linked stock receipts with lot code, expiry, damaged/rejected quantities, unit cost, audit events, and append-only ledger entries.
 - Live inventory table, low-stock and expiry alerts, batch detail, movement timeline, adjustment history, and reason-coded adjustments.
-- Server-side role authorization on pages and APIs; purchase posting and inventory adjustment permissions are separate.
+- Server-side role authorization on pages and APIs; purchase posting, inventory adjustment, and production posting permissions are separate.
+- Production runs with draft, planned, in-progress, completed, and posted states, batch planning, actual consumption, damaged output, yield variance, and atomic cost snapshot posting.
+- Ledger-backed production posting that links material consumption, material damage, finished-good receipt, and output damage to one immutable run reference.
+- Live production analytics for planned versus actual output, yield variance, exceptions, labour, overhead, and cost per packet.
+- Real Batch DNA tracing from purchase sources and material lots through recipe, ledger, production, finished goods, dispatch, invoice, and customer evidence.
 
 Not implemented:
 
-- Workflows outside purchases and inventory, such as recipes, production, finished goods, invoices, payments, dispatch, collections, and audit reporting.
+- Workflows outside purchases, inventory, production, and Batch DNA, such as recipes, finished goods, invoices, payments, dispatch, collections, and audit reporting.
 - Report generation despite the report libraries being installed.
 - Offline write synchronization; the queue foundation exists, but workflow writes require a live server.
 - Business reports and exports; the supplied calculations are implemented in the pure domain layer but no live report or export screen consumes them.
@@ -186,4 +192,4 @@ npm run verify:responsive
 
 ## Git
 
-Phase 1, Phase 2, Phase 3, and Phase 4 are committed checkpoints. Do not commit secrets or local database files. Demo passwords are documentation-only credentials for local evaluation.
+Phase 1, Phase 2, Phase 3, Phase 4, and Phase 5 are committed checkpoints. Do not commit secrets or local database files. Demo passwords are documentation-only credentials for local evaluation.

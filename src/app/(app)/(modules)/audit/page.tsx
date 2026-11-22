@@ -11,7 +11,7 @@ export default async function AuditPage({ searchParams }: { searchParams: { focu
       permission="audit:view"
       code="11"
       title="Audit"
-      description="Every quantity and transaction must remain accountable. The immutable audit trail and reconciliation views are Phase 2 workflows."
+      description="Every quantity and transaction must remain accountable. The immutable audit trail and reconciliation views are planned workflows."
       focusLabel="Audit reference"
       focusValue={searchParams.focus}
     />

@@ -11,7 +11,7 @@ export default async function DispatchPage({ searchParams }: { searchParams: { f
       permission="dispatch:view"
       code="09"
       title="Dispatch"
-      description="Finished goods leave the factory against an invoice. Vehicle, challan, and delivery confirmation are Phase 2 workflows."
+      description="Finished goods leave the factory against an invoice. Vehicle, challan, and delivery confirmation are planned workflows."
       focusLabel="Dispatch reference"
       focusValue={searchParams.focus}
     />

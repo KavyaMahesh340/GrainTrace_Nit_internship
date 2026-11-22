@@ -11,7 +11,7 @@ export default async function FinishedGoodsPage({ searchParams }: { searchParams
       permission="finishedGoods:view"
       code="07"
       title="Finished goods"
-      description="Production output lands in finished-goods stock. Packet-level traceability and dispatch readiness are Phase 2 workflows."
+      description="Production output lands in finished-goods stock. Packet-level traceability and dispatch readiness are planned workflows."
       focusLabel="Batch reference"
       focusValue={searchParams.focus}
     />

@@ -4,7 +4,7 @@
 
 The interface should feel like an industrial instrument with editorial discipline: precise, dense where necessary, spacious where meaning demands it, and always accountable. Every screen should make the material journey legible and every number look like evidence.
 
-The core concept is **MATERIAL JOURNEY**. The signature visualization is **BATCH DNA**, which will eventually connect raw material sources, production steps, finished goods, and delivery.
+The core concept is **MATERIAL JOURNEY**. The signature visualization is **BATCH DNA**, a live trace instrument that connects raw material sources, production steps, finished goods, and delivery evidence.
 
 ## Color tokens
 

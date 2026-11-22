@@ -537,9 +537,16 @@ export const productionRuns = sqliteTable(
     runNumber: text("run_number").notNull(),
     plannedOutputGrams: integer("planned_output_grams").notNull(),
     actualOutputGrams: integer("actual_output_grams").notNull().default(0),
-    status: text("status").notNull().default("planned"),
+    actualOutputPackets: integer("actual_output_packets").notNull().default(0),
+    damagedOutputPackets: integer("damaged_output_packets").notNull().default(0),
+    labourPaise: integer("labour_paise").notNull().default(0),
+    gasPaise: integer("gas_paise").notNull().default(0),
+    sellingPricePaise: integer("selling_price_paise"),
+    status: text("status").notNull().default("draft"),
     startedAt: text("started_at"),
     completedAt: text("completed_at"),
+    postedAt: text("posted_at"),
+    notes: text("notes").notNull().default(""),
     createdByUserId: integer("created_by_user_id")
       .notNull()
       .references(() => users.id, { onDelete: "restrict" }),
@@ -552,7 +559,12 @@ export const productionRuns = sqliteTable(
     index("production_runs_status_idx").on(table.status),
     check("production_runs_planned_check", sql`${table.plannedOutputGrams} > 0`),
     check("production_runs_actual_check", sql`${table.actualOutputGrams} >= 0`),
-    check("production_runs_status_check", sql`${table.status} in ('planned', 'in_progress', 'completed', 'scrapped')`),
+    check("production_runs_packets_check", sql`${table.actualOutputPackets} >= 0 and ${table.damagedOutputPackets} >= 0`),
+    check("production_runs_cost_check", sql`${table.labourPaise} >= 0 and ${table.gasPaise} >= 0`),
+    check(
+      "production_runs_status_check",
+      sql`${table.status} in ('draft', 'planned', 'in_progress', 'completed', 'posted')`,
+    ),
   ],
 );
 
@@ -577,6 +589,104 @@ export const productionRunInputs = sqliteTable(
     index("production_run_inputs_run_idx").on(table.productionRunId),
     index("production_run_inputs_batch_idx").on(table.materialBatchId),
     check("production_run_inputs_quantity_check", sql`${table.quantityGrams} > 0`),
+  ],
+);
+
+export const productionRunMaterials = sqliteTable(
+  "production_run_materials",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    factoryId: integer("factory_id")
+      .notNull()
+      .references(() => factories.id, { onDelete: "restrict" }),
+    productionRunId: integer("production_run_id")
+      .notNull()
+      .references(() => productionRuns.id, { onDelete: "cascade" }),
+    targetType: text("target_type").notNull(),
+    itemId: text("item_id").notNull(),
+    baseUnit: text("base_unit").notNull(),
+    rawMaterialId: integer("raw_material_id").references(() => rawMaterials.id, {
+      onDelete: "restrict",
+    }),
+    packagingMaterialId: integer("packaging_material_id").references(() => packagingMaterials.id, {
+      onDelete: "restrict",
+    }),
+    materialBatchId: integer("material_batch_id").references(() => materialBatches.id, {
+      onDelete: "restrict",
+    }),
+    packagingBatchId: integer("packaging_batch_id").references(() => packagingBatches.id, {
+      onDelete: "restrict",
+    }),
+    plannedQuantity: integer("planned_quantity").notNull(),
+    actualQuantity: integer("actual_quantity").notNull().default(0),
+    damagedQuantity: integer("damaged_quantity").notNull().default(0),
+    unitCostNumerator: integer("unit_cost_numerator"),
+    unitCostDenominator: integer("unit_cost_denominator"),
+    recordedAt: text("recorded_at"),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex("production_run_materials_run_item_unique").on(table.productionRunId, table.itemId),
+    index("production_run_materials_run_idx").on(table.productionRunId),
+    index("production_run_materials_batch_idx").on(table.materialBatchId),
+    index("production_run_materials_packaging_batch_idx").on(table.packagingBatchId),
+    check("production_run_materials_target_check", sql`${table.targetType} in ('raw', 'packaging')`),
+    check("production_run_materials_unit_check", sql`${table.baseUnit} in ('grams', 'pieces')`),
+    check(
+      "production_run_materials_material_check",
+      sql`(${table.rawMaterialId} is not null) <> (${table.packagingMaterialId} is not null)`,
+    ),
+    check(
+      "production_run_materials_batch_check",
+      sql`not (${table.materialBatchId} is not null and ${table.packagingBatchId} is not null)`,
+    ),
+    check("production_run_materials_planned_check", sql`${table.plannedQuantity} > 0`),
+    check(
+      "production_run_materials_actual_check",
+      sql`${table.actualQuantity} >= 0 and ${table.damagedQuantity} >= 0`,
+    ),
+    check(
+      "production_run_materials_cost_check",
+      sql`(${table.unitCostNumerator} is null and ${table.unitCostDenominator} is null) or (${table.unitCostNumerator} >= 0 and ${table.unitCostDenominator} > 0)`,
+    ),
+  ],
+);
+
+export const productionCostSnapshots = sqliteTable(
+  "production_cost_snapshots",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    factoryId: integer("factory_id")
+      .notNull()
+      .references(() => factories.id, { onDelete: "restrict" }),
+    productionRunId: integer("production_run_id")
+      .notNull()
+      .references(() => productionRuns.id, { onDelete: "restrict" }),
+    snapshotId: text("snapshot_id").notNull(),
+    runNumber: text("run_number").notNull(),
+    postedAt: text("posted_at").notNull(),
+    goodOutputPackets: integer("good_output_packets").notNull(),
+    materialCostPaise: integer("material_cost_paise").notNull(),
+    labourPaise: integer("labour_paise").notNull(),
+    gasPaise: integer("gas_paise").notNull(),
+    overheadPaise: integer("overhead_paise").notNull(),
+    totalRunCostPaise: integer("total_run_cost_paise").notNull(),
+    costPerGoodPacketPaise: integer("cost_per_good_packet_paise").notNull(),
+    snapshotJson: text("snapshot_json").notNull(),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex("production_cost_snapshots_factory_snapshot_unique").on(
+      table.factoryId,
+      table.snapshotId,
+    ),
+    uniqueIndex("production_cost_snapshots_run_unique").on(table.productionRunId),
+    index("production_cost_snapshots_factory_idx").on(table.factoryId),
+    check("production_cost_snapshots_output_check", sql`${table.goodOutputPackets} > 0`),
+    check(
+      "production_cost_snapshots_amount_check",
+      sql`${table.materialCostPaise} >= 0 and ${table.labourPaise} >= 0 and ${table.gasPaise} >= 0 and ${table.overheadPaise} >= 0 and ${table.totalRunCostPaise} >= 0 and ${table.costPerGoodPacketPaise} >= 0`,
+    ),
   ],
 );
 

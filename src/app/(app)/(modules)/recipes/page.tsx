@@ -11,7 +11,7 @@ export default async function RecipesPage({ searchParams }: { searchParams: { fo
       permission="recipes:view"
       code="05"
       title="Recipes"
-      description="Recipes define input ratios and output expectations. Versioning, tolerance rules, and batch linkage are Phase 2 workflows."
+      description="Recipes define input ratios and output expectations. Versioning, tolerance rules, and batch linkage are planned workflows."
       focusLabel="Recipe reference"
       focusValue={searchParams.focus}
     />

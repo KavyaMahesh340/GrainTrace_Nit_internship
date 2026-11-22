@@ -31,8 +31,8 @@ export function BatchDnaPanel({ dna, expanded = false }: BatchDnaPanelProps) {
               {expanded ? "The trace map begins with a batch." : "Trace the material, not the story."}
             </h2>
             <p className="mt-5 max-w-sm text-xs leading-6 text-paper/55 sm:text-sm">
-              A future signature view will connect raw material sources, production steps, finished
-              goods, and delivery. This is the visual concept only.
+              The live signature view connects raw material sources, production steps, finished
+              goods, and delivery evidence from real records.
             </p>
           </div>
           <div className="lg:col-span-8">
@@ -85,7 +85,7 @@ export function BatchDnaPanel({ dna, expanded = false }: BatchDnaPanelProps) {
                   href="/batch-dna"
                   className="inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-label text-signal underline-offset-4 hover:underline"
                 >
-                  Open trace concept
+                  Explore live trace
                   <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
                 </Link>
               )}

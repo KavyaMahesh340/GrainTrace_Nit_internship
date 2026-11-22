@@ -1,6 +1,11 @@
 import type { Metadata } from "next";
-import { ProtectedModulePage } from "@/components/system/protected-module-page";
+import { ProductionWorkspace } from "@/components/production/production-workspace";
 import { requirePermission } from "@/lib/auth/access";
+import {
+  getProductionOptions,
+  getProductionOverview,
+  listProductionRuns,
+} from "@/lib/workflows/production";
 
 export const metadata: Metadata = { title: "Production" };
 
@@ -9,15 +14,15 @@ export default async function ProductionPage({
 }: {
   searchParams: { exception?: string; focus?: string };
 }) {
-  requirePermission("production:view");
+  const { user } = requirePermission("production:view");
+
   return (
-    <ProtectedModulePage
-      permission="production:view"
-      code="06"
-      title="Production"
-      description="Production batches consume raw material and create finished goods. Weighing, yield, exceptions, and batch records are Phase 2 workflows."
-      focusLabel="Exception reference"
-      focusValue={searchParams.exception ?? searchParams.focus}
+    <ProductionWorkspace
+      initialRuns={listProductionRuns(user.factoryId)}
+      initialOverview={getProductionOverview(user.factoryId)}
+      options={getProductionOptions(user.factoryId)}
+      canManage={user.permissions.includes("production:manage")}
+      focus={searchParams.focus ?? searchParams.exception}
     />
   );
 }

@@ -4,7 +4,7 @@
 
 Source of truth: `docs/PROBLEM.md`. The original file was absent from the workspace; the supplied brief was preserved there and used verbatim.
 
-GRAINTRACE is a manufacturing intelligence system for small food manufacturers. Phase 1 delivered the foundation, design system, application shell, factory overview, and honest route structure. Phase 2 delivered the normalized database, authentication, expiring sessions, and server-enforced role permissions. Phase 3 delivered the pure domain engine and deterministic benchmark. Phase 4 adds live purchasing and inventory workflow services, APIs, and UI screens. Other workflow stages remain intentionally unimplemented.
+GRAINTRACE is a manufacturing intelligence system for small food manufacturers. Phase 1 delivered the foundation, design system, application shell, factory overview, and honest route structure. Phase 2 delivered the normalized database, authentication, expiring sessions, and server-enforced role permissions. Phase 3 delivered the pure domain engine and deterministic benchmark. Phase 4 delivered live purchasing and inventory workflow services, APIs, and UI screens. Phase 5 adds live production execution and Batch DNA traceability. Other workflow stages remain intentionally unimplemented.
 
 A requirement is marked **explicit** when stated in the brief and **implied** when directly named by the material-journey chain but lacking detail. Implied items are recorded for planning only and are not implemented or expanded with invented rules.
 
@@ -81,13 +81,13 @@ The material journey is explicitly defined as:
 | WF-03 | Purchase | Preview flow stage and `/purchases` route. |
 | WF-04 | Raw material inventory | Preview flow stage, stock-risk preview, and `/inventory` route. |
 | WF-05 | Recipe | Preview flow stage and `/recipes` route. |
-| WF-06 | Production | Preview flow stage, exceptions preview, and `/production` route. |
+| WF-06 | Production | Live workflow with planned/actual quantities, yield, exceptions, and `/production` route. |
 | WF-07 | Finished goods | Preview flow stage and `/finished-goods` route. |
 | WF-08 | Invoice | Preview flow stage and `/invoices` route. |
 | WF-09 | Dispatch | Preview flow stage and `/dispatch` route. |
 | WF-10 | Collection | Preview flow stage and `/collections` route. |
 | WF-11 | Audit | Preview flow stage and `/audit` route. |
-| WF-12 | Batch DNA trace | Concept visualization at `/batch-dna`; no trace engine implemented. |
+| WF-12 | Batch DNA trace | Live source-to-customer trace engine and instrument at `/batch-dna`. |
 
 No transition rules, state machines, approval conditions, document flows, or role assignments were specified, so none are implemented.
 
@@ -248,4 +248,27 @@ The Phase 4 brief supplied in conversation is the active source for this section
 | P4-FR-14 | Test purchase orders, receipts, inventory valuation, adjustments, negative-stock prevention, and role authorization. | Implemented |
 | P4-FR-15 | Preserve Phase 1–3 behavior and benchmark results, then verify and commit Phase 4. | Implemented |
 
-Purchases and inventory are the only live workflow stages. Recipes, production, finished goods, invoices, dispatch, collections, audit reporting, live report exports, and offline write synchronization remain out of scope for Phase 4.
+Purchases and inventory are the only live workflow stages in Phase 4. Recipes, production, finished goods, invoices, dispatch, collections, audit reporting, live report exports, and offline write synchronization are out of scope for Phase 4.
+
+## Phase 5 requirements
+
+The Phase 5 brief supplied in conversation is the active source for this section. It replaces the earlier invoice/dispatch/collection/audit plan with production execution and real Batch DNA traceability.
+
+| ID | Requirement | Status |
+| --- | --- | --- |
+| P5-FR-01 | Support production statuses: draft, planned, in progress, completed, and posted. | Implemented |
+| P5-FR-02 | Plan production against an active recipe and real source batches with available stock. | Implemented |
+| P5-FR-03 | Record actual material consumption, material damage, good output, damaged output, labour, gas, and notes. | Implemented |
+| P5-FR-04 | Flag material and yield variance exceeding three percent. | Implemented |
+| P5-FR-05 | Post production atomically with material consumption, material damage, finished-good receipt, output damage, and cost snapshot in one transaction. | Implemented |
+| P5-FR-06 | Prevent double posting and keep posted production immutable; corrections require inventory adjustments. | Implemented |
+| P5-FR-07 | Link every production ledger entry to the run number and persist a sealed cost snapshot. | Implemented |
+| P5-FR-08 | Provide live production analytics for planned versus actual output, yield, exceptions, labour, overhead, and cost per packet. | Implemented |
+| P5-FR-09 | Trace purchase sources, raw material lots, inventory movements, recipe/BOM, production runs, consumption, yield, finished goods, dispatch, invoice, and customer records. | Implemented |
+| P5-FR-10 | Make every trace node clickable with real details, quantities, source documents, timestamps, and linked records. | Implemented |
+| P5-FR-11 | Support forward and backward trace traversal and expose provenance gaps. | Implemented |
+| P5-FR-12 | Enforce server-side session and role permissions on production and trace pages/APIs. | Implemented |
+| P5-FR-13 | Test the production lifecycle, posting guards, ledger references, cost snapshots, variance flags, and Batch DNA relationships. | Implemented |
+| P5-FR-14 | Preserve Phase 1–4 behavior and benchmark results, then verify and commit Phase 5. | Implemented |
+
+Recipes, finished goods, invoices, dispatch, collections, audit reporting, live report exports, and offline write synchronization remain outside Phase 5.

@@ -11,7 +11,7 @@ export default async function CollectionsPage({ searchParams }: { searchParams: 
       permission="payments:view"
       code="10"
       title="Collections"
-      description="Invoices close through collections. Receipts, ageing, and reconciliation are Phase 2 workflows."
+      description="Invoices close through collections. Receipts, ageing, and reconciliation are planned workflows."
       focusLabel="Collection reference"
       focusValue={searchParams.focus}
     />
