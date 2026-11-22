@@ -1,8 +1,19 @@
-const CACHE_NAME = "graintrace-shell-v1";
+const CACHE_NAME = "graintrace-shell-v8";
+const OFFLINE_URL = "/offline";
+const PRECACHE_URLS = [
+  OFFLINE_URL,
+  "/manifest.webmanifest",
+  "/icons/icon.svg",
+  "/icons/icon-192.png",
+  "/icons/icon-512.png",
+];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(["/", "/offline"])).then(() => self.skipWaiting()),
+    caches
+      .open(CACHE_NAME)
+      .then((cache) => cache.addAll(PRECACHE_URLS))
+      .then(() => self.skipWaiting()),
   );
 });
 
@@ -15,43 +26,49 @@ self.addEventListener("activate", (event) => {
   );
 });
 
+function isCacheableAsset(pathname) {
+  return (
+    pathname.startsWith("/_next/static/") ||
+    pathname.startsWith("/icons/") ||
+    pathname === "/manifest.webmanifest" ||
+    pathname === "/favicon.ico"
+  );
+}
+
 self.addEventListener("fetch", (event) => {
   const request = event.request;
-
-  if (request.method !== "GET") {
-    return;
-  }
-
+  if (request.method !== "GET") return;
   const url = new URL(request.url);
-
-  if (url.origin !== self.location.origin) {
-    return;
-  }
+  if (url.origin !== self.location.origin) return;
 
   if (request.mode === "navigate") {
     event.respondWith(
-      fetch(request)
-        .then((response) => {
-          const copy = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(request.url, copy));
-          return response;
-        })
-        .catch(async () => (await caches.match(request)) || (await caches.match("/offline"))),
+      fetch(request).catch(async () => {
+        const cache = await caches.open(CACHE_NAME);
+        return (await cache.match(OFFLINE_URL)) ?? Response.error();
+      }),
     );
     return;
   }
 
-  event.respondWith(
-    caches.match(request).then(
-      (cached) =>
-        cached ||
+  if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/_next/data")) return;
+
+  if (isCacheableAsset(url.pathname)) {
+    event.respondWith(
+      caches.match(request).then((cached) =>
+        cached ??
         fetch(request).then((response) => {
           if (response.ok) {
             const copy = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+            void caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
           }
           return response;
         }),
-    ),
-  );
+      ),
+    );
+  }
+});
+
+self.addEventListener("message", (event) => {
+  if (event.data?.type === "SKIP_WAITING") self.skipWaiting();
 });

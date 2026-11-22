@@ -4,7 +4,7 @@
 
 GRAINTRACE is a material-journey accountability system. The architecture must make quantity and transaction provenance easy to trace from salesman order through audit, while the interface presents that provenance as an operational surface rather than a generic dashboard.
 
-Phase 1 established the runtime, design tokens, route topology, data workflow, and honest preview experience. Phase 2 added the normalized database, authentication, expiring sessions, and server-enforced role permissions. Phase 4 added live purchasing and inventory workflows. Phase 5 added production execution and Batch DNA traceability. Phase 6 added sales orders, approval control, dispatch, GST invoices, credit notes, collections, and mobile order entry built on the Phase 3 pure domain engine. Phase 7 adds signed payment corrections, collections analytics, ten live reports, CSV/Excel/PDF exports, and audit exploration; recipes, finished goods, and offline write synchronization remain unimplemented.
+Phase 1 established the runtime, design tokens, route topology, data workflow, and honest preview experience. Phase 2 added the normalized database, authentication, expiring sessions, and server-enforced role permissions. Phase 4 added live purchasing and inventory workflows. Phase 5 added production execution and Batch DNA traceability. Phase 6 added sales orders, approval control, dispatch, GST invoices, credit notes, collections, and mobile order entry built on the Phase 3 pure domain engine. Phase 7 added signed payment corrections, collections analytics, ten live reports, CSV/Excel/PDF exports, and audit exploration. Phase 8 adds an installable PWA, durable offline order queueing, and idempotent synchronization; recipes and finished goods remain unimplemented.
 
 ## Stack decisions
 
@@ -35,7 +35,6 @@ src/
 ├── app/
 │   ├── (app)/                   Session-protected application routes
 │   │   ├── (modules)/           Journey-stage route shells
-│   │   ├── offline/             Protected offline fallback page
 │   │   ├── error.tsx            Protected route error boundary
 │   │   ├── layout.tsx           Session guard plus AppShell
 │   │   ├── loading.tsx          Overview loading skeleton
@@ -47,13 +46,14 @@ src/
 │   ├── api/purchases/           Supplier, order, status, and receipt APIs
 │   ├── api/inventory/           Stock, detail, overview, and adjustment APIs
 │   ├── api/production/          Production run, planning, posting, and option APIs
-│   ├── api/sales/               Customer, sales order, option, and status APIs
+│   ├── api/sales/               Customer, sales order, option, status, and sync APIs
 │   ├── api/dispatch/            Fulfilment plan, dispatch, detail, and status APIs
 │   ├── api/invoices/            Invoice, PDF, cancellation, option, and candidate APIs
 │   ├── api/payments/            Receipt and collection APIs
 │   ├── api/batch-dna/           Batch trace index and detail APIs
 │   ├── globals.css              Tokens and base styles
-│   ├── layout.tsx               Fonts, metadata, PWA manifest
+│   ├── offline/                 Public offline fallback page
+│   ├── layout.tsx               Fonts, metadata, PWA manifest, global service worker registration
 │   └── not-found.tsx            Root unknown-route state
 ├── components/
 │   ├── layout/                  App shell, header, footer, navigation, user menu
@@ -83,7 +83,7 @@ src/
 │   ├── domain/preview.ts        Preview schema and inferred types
 │   ├── format.ts                Number and currency presentation helpers
 │   ├── navigation.ts            Permission-aware route registry
-│   ├── offline/queue.ts         Native IndexedDB mutation queue
+│   ├── offline/                 IndexedDB v2 order queue, reference cache, and sync client
 │   ├── pdf/                     React PDF tax invoice document
 │   ├── workflows/               Transactional purchasing, inventory, production, sales, dispatch, invoice, payment, and trace services
 │   └── utils.ts                 Class merge utility
@@ -148,13 +148,15 @@ Phase 4 and Phase 5 workflow services own transactions and call these functions.
 | `/api/production/*` | Production runs, planning, status, completion, posting, overview, and options | Implemented in Phase 5 |
 | `/api/batch-dna/*` | Batch trace index and detail | Implemented in Phase 5 |
 | `/api/sales/*` | Customer, sales order, option, and status APIs | Implemented in Phase 6 |
+| `/api/sales/sync` | Idempotent offline order submission with server validation and permission checks | Implemented in Phase 8 |
 | `/api/dispatch/*` | Fulfilment plan, dispatch, detail, and status APIs | Implemented in Phase 6 |
 | `/api/invoices/*` | Invoice, detail, PDF, cancellation, option, and candidate APIs | Implemented in Phase 6 |
 | `/api/payments/*` | Receipt, correction, collection, and dashboard APIs | Implemented in Phase 6; corrections in Phase 7 |
 | `/api/reports/*` | Report query and CSV/Excel/PDF export APIs | Implemented in Phase 7 |
 | `/api/audit/*` | Audit entry search and auditor trail APIs | Implemented in Phase 7 |
 | `/` | Protected factory overview | Implemented with preview data |
-| `/orders` | Salesman orders and approval tracking | Implemented in Phase 6 |
+| `/orders` | Salesman orders, offline queue, and approval tracking | Implemented in Phase 6; offline queue in Phase 8 |
+| `/offline` | Public service worker fallback | Implemented in Phase 8 |
 | `/purchases` | Purchase orders, receipts, and suppliers | Implemented in Phase 4 |
 | `/inventory` | Raw, packaging, and finished-goods stock | Implemented in Phase 4 |
 | `/recipes` | Recipe stage | Route shell; workflow planned |
@@ -172,7 +174,7 @@ Overview links preserve real and preview references in query strings (for exampl
 
 ## Database design
 
-The schema grew from thirty-one Phase 2 tables to the Phase 7 commercial and accountability model. Every transactional and master-data table is scoped by `factory_id`, has timestamp columns, and uses foreign keys for referential integrity. Money is stored as integer paise in `*_paise` columns. Physical quantities are stored as integer base units, primarily grams in `*_grams` columns, with packet counts in `quantity_packets` and packaging counts in `quantity_units`. Phase 7 adds signed payment direction, correction links, duplicate-key uniqueness, product category, and richer audit evidence without replacing existing records.
+The schema grew from thirty-one Phase 2 tables to the Phase 8 commercial, accountability, and offline-sync model. Every transactional and master-data table is scoped by `factory_id`, has timestamp columns, and uses foreign keys for referential integrity. Money is stored as integer paise in `*_paise` columns. Physical quantities are stored as integer base units, primarily grams in `*_grams` columns, with packet counts in `quantity_packets` and packaging counts in `quantity_units`. Phase 7 added signed payment direction, correction links, duplicate-key uniqueness, product category, and richer audit evidence. Phase 8 adds a nullable, factory-scoped unique idempotency key on sales orders without replacing existing records.
 
 Table groups:
 
@@ -273,18 +275,11 @@ Purchases do not create stock. Goods receipts create batch rows, post ledger mov
 
 ## Offline architecture
 
-- `public/manifest.webmanifest` provides install metadata.
-- `public/sw.js` caches the shell and previously visited same-origin GET responses; navigations are network-first with cached fallback to `/offline`.
-- `ServiceWorkerRegistration` registers the worker after load and fails silently if unsupported.
-- `src/lib/offline/queue.ts` creates IndexedDB database `graintrace-offline` with store `mutation_queue`.
-- Queue records are validated with Zod and expose enqueue, list, count, and remove operations.
-- `ConnectionStatus` displays actual `navigator.onLine` state and real queue count.
-- The salesman console queues offline draft and submission payloads in IndexedDB with honest queued status; no background synchronization endpoint exists yet.
-- All other workflow writes use live authenticated APIs.
+The implemented Phase 8 caching, IndexedDB, reference-cache, and synchronization design is documented in “Offline-first data flow” below. All non-salesman workflow writes remain live authenticated APIs.
 
 ## UI architecture
 
-- `AppShell` owns skip link, header, main landmark, footer, and service-worker registration.
+- `AppShell` owns skip link, header, main landmark, and footer; the root layout owns global service-worker registration and install prompts.
 - `SiteHeader` uses `usePathname` for active route state; `MobileNav` uses a Radix Dialog sheet.
 - `navigation.ts` is the single source of route labels, indexes, phases, and required permissions.
 - `AppShell` receives the server-derived user profile, filters navigation, and renders `UserMenu`.
@@ -296,8 +291,18 @@ Purchases do not create stock. Goods receipts create batch rows, post ledger mov
 - Phase 5 Batch DNA uses a ten-stage evidence graph with upstream/downstream traversal, edge quantities, node inspector, and provenance-gap reporting.
 - Phase 6 adds a touch-first salesman order console with live totals, status-specific order tracking, padded detail sheets, dispatch planning, invoice/candidate inspection, and collection receipt books.
 - Phase 7 adds collections aging and exposure panels, a payment correction sheet, a ten-report catalog with shared filters and export actions, and an audit explorer with event inspector and source-to-transaction trail timeline.
+- Phase 8 adds a touch-first local queue inspector, sync-state badges, connection and last-sync indicators, automatic reconnect sync, manual retry controls, and cached reference fallbacks in the salesman console.
 - `Reveal` wraps major sections with subtle viewport motion; `useReducedMotion` disables transform/opacity animation.
 - Recharts is client-only and receives serializable preview data as props.
+
+## Offline-first data flow
+
+- The service worker precaches only `/offline`, the manifest, and icon assets. Static Next.js and icon GETs are added to the cache after use; navigations are network-first and fall back to the public offline page; API and RSC data requests are never cached.
+- The salesman console writes orders to IndexedDB v2 before attempting submission. Records carry a unique idempotency key, payload, state, attempts, error, server order ID, and timestamps; a v1 `mutation_queue` is migrated in-place on upgrade.
+- Cached reference options contain only non-sensitive order-entry fields such as IDs, codes, names, product grams, HSN, state, and customer type. No addresses, financial balances, authenticated pages, reports, or API responses are cached.
+- `syncQueuedOrders` validates local payload shape in the browser, posts to `/api/sales/sync`, and moves each record through `syncing` to `synced` or `failed`. Failed records remain available for editing and retry.
+- The server re-parses the payload with Zod, rechecks `orders:manage`, and calls `syncSalesOrder`, which creates a submitted order only once per factory-scoped idempotency key. Replays return the original order; a key reused for a different order number is a conflict.
+- Offline sync never approves orders, posts stock, creates invoices, or bypasses dispatch rules. Those remain separate authenticated workflows.
 
 ## Accessibility approach
 
@@ -313,7 +318,8 @@ Purchases do not create stock. Goods receipts create batch rows, post ledger mov
 
 - `format.test.ts`: presentation helpers and class merging.
 - `preview.test.ts`: Zod schema contract, preview labeling, and eleven-stage journey integrity.
-- `offline-queue.test.ts`: real IndexedDB operations using fake-indexeddb, including validation failure.
+- `offline-queue.test.ts`: real IndexedDB v2 operations using fake-indexeddb, including persistence, state transitions, summaries, invalid payloads, and legacy migration.
+- `offline-sync.test.ts`: queue-to-server payload conversion, replay safety, idempotency conflicts, synced state, and retryable failures.
 - `empty-state.test.tsx`: honest empty state and working action link.
 - `auth.test.ts`: password hashing/verification, generic failures, role-derived login redirects, absent/malformed/expired/revoked sessions, server permission matrix, and duplicate-user rejection.
 - `benchmark.test.ts`: deterministic Phase 3 acceptance values, conversion errors, stock protection, tax rounding, weighted average, cost snapshots, variance tolerance, partial dispatch, payments, outstanding balances, and duplicate posting.
@@ -324,15 +330,15 @@ Purchases do not create stock. Goods receipts create batch rows, post ledger mov
 - Vitest aliases `server-only` to an empty test module so server-only workflow services can be tested directly in the Node-native test environment.
 - Verification commands: `npm run typecheck`, `npm run lint`, `npm test`, `npm run build`.
 
-Browser responsive and console-error checks are automated by `scripts/responsive-check.mjs` using Puppeteer Core and an installed Chrome or Edge binary. The script signs in with the seeded Owner account, then checks 375px, 768px, 1024px, and 1440px plus representative protected routes, the unauthorized state, and a not-found route.
+Browser responsive and console-error checks are automated by `scripts/responsive-check.mjs` using Puppeteer Core and an installed Chrome or Edge binary. The script signs in with the seeded Owner and Salesman accounts, checks 375px, 768px, 1024px, and 1440px, verifies the mobile offline console and PWA assets, then checks representative protected routes, the public offline fallback, the unauthorized state, and a not-found route.
 
 ## Known architectural limitations
 
 - Authentication and authorization are implemented, but no user-management screen exists; `users:manage` is enforced only at the route layer.
 - Recipes and finished goods remain explicitly labeled route shells rather than repository-backed workflow screens; audit is a live repository-backed explorer as of Phase 7.
 - Purchases, production, inventory adjustments, and dispatch write the stock ledger; dispatch consumes whole finished-good packets in `pieces` and decrements `availableGrams` by each packet's gram weight.
-- No synchronization backend or replay endpoint exists for the offline queue; the salesman console labels queued drafts as offline.
-- Service worker caches GET responses only; it does not synchronize writes.
+- Offline queue support is scoped to salesman order entry; other workflows require a live server.
+- The service worker caches static assets only and does not intercept or cache API responses; synchronization is driven by the authenticated application client.
 - Report definitions are fixed in code for the supplied Phase 7 catalog; adding arbitrary user-defined reports remains outside scope.
 - Sales order and other user-entered references are user-supplied and unique within their factory; invoice, credit note, payment, and dispatch numbers use server-generated financial-year sequences.
 - The seed creates master data and numbering configuration only; operational records are created through the live workflow UI or tests.

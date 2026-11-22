@@ -137,6 +137,22 @@ Delivered scope:
 
 **Exit criteria:** schema migration applies, typecheck and lint pass, tests and Phase 3 benchmark pass, production build succeeds, and Phase 7 is committed before stopping.
 
+## Phase 8 — Offline-First Field Operations (completed)
+
+The Phase 8 brief extends the material journey with durable offline order entry and safe replay while preserving all earlier phases.
+
+Delivered scope:
+
+1. An installable PWA manifest with PNG icons, global service worker registration, install prompts, static-only caching, and a public offline fallback.
+2. An IndexedDB v2 queue with legacy migration, draft/queued/syncing/synced/failed states, idempotency keys, retry metadata, and durable last-sync information.
+3. Minimal cached customer and product reference options for offline order entry without caching authenticated HTML, reports, invoices, or API data.
+4. A rewritten salesman mobile console with local saves, queueing, automatic sync on reconnect, manual retry, failed-order details, synced records, and network-aware messaging.
+5. A DAO schema migration for factory-scoped idempotency keys and an idempotent, permission-checked `/api/sales/sync` endpoint that submits orders through existing validation and workflow rules.
+6. Tests for IndexedDB persistence, legacy migration, queue state transitions, payload conversion, idempotent replay, key conflicts, and retry failure handling.
+7. Responsive verification for the salesman offline console, PWA assets, and the public fallback alongside existing desktop routes.
+
+**Exit criteria:** schema migration applies, typecheck and lint pass, tests and Phase 3 benchmark pass, production build succeeds, and Phase 8 is committed before stopping.
+
 No subsequent phase begins automatically.
 
 ## Dependency policy

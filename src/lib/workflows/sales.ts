@@ -8,7 +8,7 @@ import { requireActorPermission } from "./context";
 import type { WorkflowDb, WorkflowTransaction } from "./db";
 import { recordAudit } from "./audit";
 import { WorkflowError } from "./errors";
-import type { SalesOrderInput, SalesOrderStatusInput } from "./validation";
+import type { OfflineOrderSyncInput, SalesOrderInput, SalesOrderStatusInput } from "./validation";
 
 export type SalesOrderLineDetail = {
   id: number;
@@ -41,6 +41,7 @@ export type SalesOrderDetail = {
   approvedAt: string | null;
   createdAt: string;
   lines: SalesOrderLineDetail[];
+  replayed?: boolean;
 };
 
 export type SalesOrderSummary = Pick<
@@ -191,9 +192,36 @@ export function getSalesOverview(factoryId: number) {
   };
 }
 
-export function createSalesOrder(actor: WorkflowActor, input: SalesOrderInput): SalesOrderDetail {
+export function createSalesOrder(
+  actor: WorkflowActor,
+  input: SalesOrderInput,
+  options: { idempotencyKey?: string; submit?: boolean } = {},
+): SalesOrderDetail {
   requireActorPermission(actor, "orders:manage");
   return getDb().transaction((tx) => {
+    if (options.idempotencyKey) {
+      const replay = tx
+        .select()
+        .from(salesOrders)
+        .where(
+          and(
+            eq(salesOrders.factoryId, actor.factoryId),
+            eq(salesOrders.idempotencyKey, options.idempotencyKey),
+          ),
+        )
+        .get();
+      if (replay) {
+        if (replay.orderNumber !== input.orderNumber) {
+          throw new WorkflowError(
+            "This offline order key belongs to a different order.",
+            "idempotency_conflict",
+            409,
+          );
+        }
+        return { ...loadSalesOrderDetail(tx, replay), replayed: true };
+      }
+    }
+
     const duplicate = tx
       .select({ id: salesOrders.id })
       .from(salesOrders)
@@ -242,7 +270,8 @@ export function createSalesOrder(actor: WorkflowActor, input: SalesOrderInput): 
         orderNumber: input.orderNumber,
         orderDate: input.orderDate,
         requestedDate: input.requestedDate || null,
-        status: "draft",
+        status: options.submit ? "submitted" : "draft",
+        idempotencyKey: options.idempotencyKey ?? null,
         totalAmountPaise,
         notes: input.notes,
         salesmanUserId: actor.role === "salesman" ? actor.userId : null,
@@ -273,11 +302,19 @@ export function createSalesOrder(actor: WorkflowActor, input: SalesOrderInput): 
     recordAudit(tx, actor, "SALES_ORDER_CREATED", "sales_order", orderId, {
       orderNumber: input.orderNumber,
       totalPaise: totalAmountPaise,
+      idempotencyKey: options.idempotencyKey ?? null,
     });
+    if (options.submit) {
+      recordAudit(tx, actor, "SALES_ORDER_SUBMITTED", "sales_order", orderId, {
+        orderNumber: input.orderNumber,
+        from: "draft",
+        to: "submitted",
+      });
+    }
 
     const order = tx.select().from(salesOrders).where(eq(salesOrders.id, orderId)).get();
     if (!order) throw new WorkflowError("Unable to load the sales order.", "load_failed", 500);
-    return loadSalesOrderDetail(tx, order);
+    return { ...loadSalesOrderDetail(tx, order), replayed: false };
   });
 }
 
@@ -327,4 +364,12 @@ export function updateSalesOrderStatus(
     if (!updated) throw new WorkflowError("Unable to load the sales order.", "load_failed", 500);
     return loadSalesOrderDetail(tx, updated);
   });
+}
+
+export function syncSalesOrder(actor: WorkflowActor, input: OfflineOrderSyncInput) {
+  const order = createSalesOrder(actor, input.order, {
+    idempotencyKey: input.idempotencyKey,
+    submit: true,
+  });
+  return { order, replayed: order.replayed ?? false };
 }

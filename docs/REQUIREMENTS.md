@@ -4,7 +4,7 @@
 
 Source of truth: `docs/PROBLEM.md`. The original file was absent from the workspace; the supplied brief was preserved there and used verbatim.
 
-GRAINTRACE is a manufacturing intelligence system for small food manufacturers. Phase 1 delivered the foundation, design system, application shell, factory overview, and honest route structure. Phase 2 delivered the normalized database, authentication, expiring sessions, and server-enforced role permissions. Phase 3 delivered the pure domain engine and deterministic benchmark. Phase 4 delivered live purchasing and inventory workflow services, APIs, and UI screens. Phase 5 delivered live production execution and Batch DNA traceability. Phase 6 delivered sales orders, approval control, dispatch, GST invoices, credit notes, collections, a salesman mobile console, and live order tracking. Phase 7 adds audited payment corrections, a collections dashboard, ten financial and operational reports, CSV/Excel/PDF exports, and a live audit explorer with source-to-transaction trails. Recipes and finished-goods route shells remain intentionally unimplemented.
+GRAINTRACE is a manufacturing intelligence system for small food manufacturers. Phase 1 delivered the foundation, design system, application shell, factory overview, and honest route structure. Phase 2 delivered the normalized database, authentication, expiring sessions, and server-enforced role permissions. Phase 3 delivered the pure domain engine and deterministic benchmark. Phase 4 delivered live purchasing and inventory workflow services, APIs, and UI screens. Phase 5 delivered live production execution and Batch DNA traceability. Phase 6 delivered sales orders, approval control, dispatch, GST invoices, credit notes, collections, a salesman mobile console, and live order tracking. Phase 7 delivered audited payment corrections, a collections dashboard, ten financial and operational reports, CSV/Excel/PDF exports, and a live audit explorer with source-to-transaction trails. Phase 8 adds an installable PWA, durable offline order drafts and queueing, idempotent server synchronization, sync-state visibility, and mobile offline operations. Recipes and finished-goods route shells remain intentionally unimplemented.
 
 A requirement is marked **explicit** when stated in the brief and **implied** when directly named by the material-journey chain but lacking detail. Implied items are recorded for planning only and are not implemented or expanded with invented rules.
 
@@ -295,7 +295,7 @@ The Phase 6 brief supplied in conversation is the active source for this section
 | P6-FR-14 | Test numbering, order approval, dispatch guards, packet allocation, GST posting, over-invoice prevention, payments, credit notes, and authorization. | Implemented |
 | P6-FR-15 | Preserve Phase 1–5 behavior and benchmark results, then verify and commit Phase 6. | Implemented |
 
-Recipes, finished goods, audit reporting, live report exports, and offline write synchronization remain outside Phase 6. Offline drafts are queued locally and are labelled as queued rather than synchronized.
+Recipes, finished goods, audit reporting, and live report exports remain outside Phase 6. Offline drafts are queued locally and are labelled as queued rather than synchronized.
 
 ## Phase 7 requirements
 
@@ -317,4 +317,25 @@ The Phase 7 brief supplied in conversation is the active source for this section
 | P7-FR-12 | Test correction reversals, duplicate references, signed report totals, exports, audit search, and trails. | Implemented |
 | P7-FR-13 | Preserve Phase 1–6 behavior and benchmark results, then verify and commit Phase 7. | Implemented |
 
-Recipes, finished goods, and offline write synchronization remain outside Phase 7. Offline drafts are queued locally and are labelled as queued rather than synchronized.
+Recipes and finished goods remain outside Phase 7. Offline write synchronization remains outside Phase 7; drafts are queued locally and labelled as queued rather than synchronized.
+
+## Phase 8 requirements
+
+The Phase 8 brief supplied in conversation is the active source for this section. It extends the salesman order experience with an installable offline-first shell and safe replay of queued orders through existing server workflows.
+
+| ID | Requirement | Status |
+| --- | --- | --- |
+| P8-FR-01 | Provide an installable PWA with a web manifest, 192px and 512px PNG icons, global registration, and an offline fallback. | Implemented |
+| P8-FR-02 | Keep authenticated pages, reports, invoices, and API responses out of the service worker cache; cache static assets only. | Implemented |
+| P8-FR-03 | Store durable order drafts and submissions in IndexedDB with state, retry attempts, timestamps, errors, and a unique idempotency key. | Implemented |
+| P8-FR-04 | Migrate legacy v1 offline queue records without dropping them. | Implemented |
+| P8-FR-05 | Cache minimal non-sensitive customer and product reference options for offline order entry. | Implemented |
+| P8-FR-06 | Show connection state, pending and failed counts, last successful sync, per-record sync states, and manual retry controls. | Implemented |
+| P8-FR-07 | Revalidate every queued order on the server with Zod, session authentication, `orders:manage`, and existing workflow rules. | Implemented |
+| P8-FR-08 | Persist idempotency keys with factory-scoped uniqueness so retries replay the original order instead of creating duplicates. | Implemented |
+| P8-FR-09 | Never approve orders or post stock from offline sync; approval and dispatch remain separate server workflows. | Implemented |
+| P8-FR-10 | Test queue persistence, migration, state transitions, idempotent replay, idempotency conflicts, payload conversion, and retry failures. | Implemented |
+| P8-FR-11 | Extend responsive checks to the salesman mobile offline console, PWA assets, and the public fallback. | Implemented |
+| P8-FR-12 | Preserve Phase 1–7 behavior and benchmark results, then verify and commit Phase 8. | Implemented |
+
+Offline support is limited to optimized salesman order entry. Other workflows remain server-connected by design.

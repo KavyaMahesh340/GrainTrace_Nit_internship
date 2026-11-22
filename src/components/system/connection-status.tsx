@@ -1,23 +1,32 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Wifi, WifiOff } from "lucide-react";
-import { getQueueCount, subscribeToQueueChanges } from "@/lib/offline/queue";
+import { AlertTriangle, Wifi, WifiOff } from "lucide-react";
+import { getOfflineQueueSummary, subscribeToOfflineChanges, type OfflineQueueSummary } from "@/lib/offline/queue";
+
+const emptySummary: OfflineQueueSummary = {
+  total: 0,
+  drafts: 0,
+  pending: 0,
+  failed: 0,
+  synced: 0,
+  lastSuccessfulSync: null,
+};
 
 export function ConnectionStatus() {
   const [isOnline, setIsOnline] = useState(true);
-  const [queueCount, setQueueCount] = useState<number | null>(null);
+  const [summary, setSummary] = useState<OfflineQueueSummary>(emptySummary);
 
   useEffect(() => {
     const updateConnection = () => setIsOnline(navigator.onLine);
     const updateQueue = () => {
-      getQueueCount().then(setQueueCount).catch(() => undefined);
+      void getOfflineQueueSummary().then(setSummary).catch(() => undefined);
     };
 
     updateConnection();
     updateQueue();
 
-    const unsubscribe = subscribeToQueueChanges(updateQueue);
+    const unsubscribe = subscribeToOfflineChanges(updateQueue);
     window.addEventListener("online", updateConnection);
     window.addEventListener("offline", updateConnection);
 
@@ -31,7 +40,7 @@ export function ConnectionStatus() {
   return (
     <div
       className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-label text-paper/60"
-      title="Connection state and queued offline mutations"
+      title="Connection state and persistent offline order queue"
     >
       {isOnline ? (
         <Wifi className="h-3.5 w-3.5" aria-hidden="true" />
@@ -40,7 +49,13 @@ export function ConnectionStatus() {
       )}
       <span>{isOnline ? "Online" : "Offline"}</span>
       <span className="text-paper/25">/</span>
-      <span>Queue {queueCount === null ? "—" : queueCount}</span>
+      <span>Queue {summary.pending}</span>
+      {summary.failed > 0 ? (
+        <span className="flex items-center gap-1 text-signal">
+          <AlertTriangle className="h-3 w-3" aria-hidden="true" />
+          {summary.failed} failed
+        </span>
+      ) : null}
     </div>
   );
 }

@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import { ServiceWorkerRegistration } from "@/components/system/service-worker-registration";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
 import type { SessionUser } from "@/lib/auth/types";
@@ -21,7 +20,6 @@ export function AppShell({ children, user }: { children: ReactNode; user: Sessio
         {children}
       </main>
       <SiteFooter />
-      <ServiceWorkerRegistration />
     </div>
   );
 }

@@ -41,6 +41,19 @@ const routeChecks = [
   { path: "/does-not-exist", expectedStatus: 404 },
 ];
 
+const pwaAssets = [
+  "/manifest.webmanifest",
+  "/sw.js",
+  "/icons/icon.svg",
+  "/icons/icon-192.png",
+  "/icons/icon-512.png",
+];
+
+const expectedLookupMisses = [
+  "/api/sales/orders/SO-2481",
+  "/api/production/runs/EX-0142",
+];
+
 const failures = [];
 const browser = await puppeteer.launch({
   executablePath,
@@ -59,32 +72,53 @@ function watchConsole(page, label, errors) {
   });
 }
 
-try {
+async function signIn(email, password) {
   const loginResponse = await fetch(`${baseUrl}/api/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email: "owner@graintrace.local", password: "Owner!2026" }),
+    body: JSON.stringify({ email, password }),
   });
   if (!loginResponse.ok) {
-    throw new Error(`Demo sign-in failed with status ${loginResponse.status}. Run npm run db:seed first.`);
+    throw new Error(`Demo sign-in failed for ${email} with status ${loginResponse.status}. Run npm run db:seed first.`);
   }
-
   const cookieHeaders = typeof loginResponse.headers.getSetCookie === "function"
     ? loginResponse.headers.getSetCookie()
     : [loginResponse.headers.get("set-cookie") ?? ""];
   const sessionCookieHeader = cookieHeaders.find((header) => header.startsWith("graintrace_session="));
   const sessionValue = sessionCookieHeader?.match(/graintrace_session=([^;]+)/)?.[1];
   if (!sessionValue) {
-    throw new Error("Demo sign-in did not return a session cookie.");
+    throw new Error(`Demo sign-in for ${email} did not return a session cookie.`);
   }
-
-  const sessionCookie = {
+  return {
     name: "graintrace_session",
     value: sessionValue,
     url: baseUrl,
     httpOnly: true,
     sameSite: "Lax",
   };
+}
+
+async function overflowMetrics(page) {
+  return page.evaluate(() => ({
+    scrollWidth: document.documentElement.scrollWidth,
+    clientWidth: document.documentElement.clientWidth,
+    uncontained: Array.from(document.querySelectorAll("main *"))
+      .filter((element) => {
+        const style = getComputedStyle(element);
+        return style.overflowX === "visible" && element.scrollWidth > element.clientWidth + 1;
+      })
+      .slice(0, 12)
+      .map((element) => ({
+        tag: element.tagName,
+        className: String(element.className ?? "").slice(0, 120),
+        scrollWidth: element.scrollWidth,
+        clientWidth: element.clientWidth,
+      })),
+  }));
+}
+
+try {
+  const sessionCookie = await signIn("owner@graintrace.local", "Owner!2026");
 
   for (const viewport of viewports) {
     const page = await browser.newPage();
@@ -151,25 +185,83 @@ try {
     await page.close();
   }
 
+  const salesmanCookie = await signIn("salesman@graintrace.local", "Sales!2026");
+  const salesmanViewports = viewports.filter((viewport) => viewport.width <= 1024);
+  for (const viewport of salesmanViewports) {
+    const page = await browser.newPage();
+    await page.setCookie(salesmanCookie);
+    const errors = [];
+    watchConsole(page, `salesman-${viewport.label}`, errors);
+    await page.setViewport({ width: viewport.width, height: viewport.height });
+    await page.goto(`${baseUrl}/orders`, { waitUntil: "networkidle0", timeout: 30000 });
+
+    const metrics = await page.evaluate(() => ({
+      heading: document.querySelector("h1")?.textContent?.trim() ?? "",
+      text: document.body.textContent ?? "",
+      ...(() => {
+        const uncontained = Array.from(document.querySelectorAll("main *"))
+          .filter((element) => {
+            const style = getComputedStyle(element);
+            return style.overflowX === "visible" && element.scrollWidth > element.clientWidth + 1;
+          })
+          .slice(0, 12)
+          .map((element) => ({
+            tag: element.tagName,
+            className: String(element.className ?? "").slice(0, 120),
+            scrollWidth: element.scrollWidth,
+            clientWidth: element.clientWidth,
+          }));
+        return {
+          scrollWidth: document.documentElement.scrollWidth,
+          clientWidth: document.documentElement.clientWidth,
+          uncontained,
+        };
+      })(),
+    }));
+
+    if (metrics.scrollWidth > metrics.clientWidth + 1) {
+      failures.push(
+        `salesman-${viewport.label}: mobile orders overflow horizontally (${metrics.scrollWidth} > ${metrics.clientWidth}) uncontained=${JSON.stringify(metrics.uncontained)}`,
+      );
+    }
+    if (!metrics.heading.includes("Orders, one hand at a time")) {
+      failures.push(`salesman-${viewport.label}: mobile order console heading missing`);
+    }
+    if (!metrics.text.includes("LOCAL QUEUE") || !metrics.text.includes("Sync now")) {
+      failures.push(`salesman-${viewport.label}: offline queue controls missing`);
+    }
+    if (screenshotDir) {
+      await page.screenshot({
+        path: join(screenshotDir, `salesman-orders-${viewport.width}.png`),
+        fullPage: true,
+      });
+    }
+    failures.push(...errors);
+    await page.close();
+  }
+
   const routePage = await browser.newPage();
   await routePage.setCookie(sessionCookie);
   const routeErrors = [];
   let allowExpected404 = false;
+  let currentRoute = "";
   routePage.on("console", (message) => {
     if (message.type() !== "error") {
       return;
     }
-    if (allowExpected404 && message.text().includes("404")) {
+    const location = message.location();
+    if (message.text().includes("404") && (allowExpected404 || expectedLookupMisses.some((path) => location.url?.includes(path)))) {
       return;
     }
-    routeErrors.push(`routes: ${message.text()}`);
+    routeErrors.push(`routes ${currentRoute}: ${message.text()} ${location.url ?? ""}`);
   });
   routePage.on("pageerror", (error) => {
-    routeErrors.push(`routes: ${error.message}`);
+    routeErrors.push(`routes ${currentRoute}: ${error.message}`);
   });
   await routePage.setViewport({ width: 1440, height: 900 });
 
   for (const route of routeChecks) {
+    currentRoute = route.path;
     allowExpected404 = route.expectedStatus === 404;
     const response = await routePage.goto(`${baseUrl}${route.path}`, {
       waitUntil: "networkidle0",
@@ -182,6 +274,21 @@ try {
 
   failures.push(...routeErrors);
   await routePage.close();
+
+  const publicOfflineResponse = await fetch(`${baseUrl}/offline`);
+  if (!publicOfflineResponse.ok) {
+    failures.push(`/offline: public fallback returned ${publicOfflineResponse.status}`);
+  }
+  const manifest = await (await fetch(`${baseUrl}/manifest.webmanifest`)).json();
+  if (!Array.isArray(manifest.icons) || !manifest.icons.some((icon) => icon.sizes === "512x512")) {
+    failures.push("/manifest.webmanifest: missing 512x512 install icon");
+  }
+  for (const asset of pwaAssets) {
+    const response = await fetch(`${baseUrl}${asset}`);
+    if (!response.ok) {
+      failures.push(`${asset}: PWA asset returned ${response.status}`);
+    }
+  }
 } finally {
   await browser.close();
 }
@@ -192,5 +299,5 @@ if (failures.length > 0) {
 }
 
 process.stdout.write(
-  `Responsive checks passed at 375px, 768px, 1024px, and 1440px. Route and console checks passed for ${routeChecks.length} routes.\n`,
+  `Responsive checks passed at 375px, 768px, 1024px, and 1440px. Mobile offline console, PWA assets, public fallback, and ${routeChecks.length} route checks passed.\n`,
 );

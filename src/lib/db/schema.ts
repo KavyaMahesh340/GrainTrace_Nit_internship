@@ -286,6 +286,7 @@ export const salesOrders = sqliteTable(
       .notNull()
       .references(() => customers.id, { onDelete: "restrict" }),
     orderNumber: text("order_number").notNull(),
+    idempotencyKey: text("idempotency_key"),
     orderDate: text("order_date").notNull(),
     requestedDate: text("requested_date"),
     status: text("status").notNull().default("draft"),
@@ -305,6 +306,7 @@ export const salesOrders = sqliteTable(
   },
   (table) => [
     uniqueIndex("sales_orders_factory_number_unique").on(table.factoryId, table.orderNumber),
+    uniqueIndex("sales_orders_factory_idempotency_unique").on(table.factoryId, table.idempotencyKey),
     index("sales_orders_factory_idx").on(table.factoryId),
     index("sales_orders_customer_idx").on(table.customerId),
     index("sales_orders_status_idx").on(table.status),

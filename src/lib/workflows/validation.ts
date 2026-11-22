@@ -206,6 +206,11 @@ export const salesOrderInputSchema = z.object({
 
 export const salesOrderStatusSchema = z.enum(["submitted", "approved", "rejected", "cancelled"]);
 
+export const offlineOrderSyncSchema = z.object({
+  idempotencyKey: z.string().trim().min(8).max(128).regex(/^[A-Za-z0-9_-]+$/),
+  order: salesOrderInputSchema,
+});
+
 export const dispatchLineSchema = z.object({
   salesOrderItemId: positiveId,
   quantityPackets: positiveInteger,
@@ -278,6 +283,7 @@ export type CustomerStatusInput = z.infer<typeof customerStatusSchema>;
 export type SalesOrderLineInput = z.infer<typeof salesOrderLineSchema>;
 export type SalesOrderInput = z.infer<typeof salesOrderInputSchema>;
 export type SalesOrderStatusInput = z.infer<typeof salesOrderStatusSchema>;
+export type OfflineOrderSyncInput = z.infer<typeof offlineOrderSyncSchema>;
 export type DispatchLineInput = z.infer<typeof dispatchLineSchema>;
 export type DispatchInput = z.infer<typeof dispatchInputSchema>;
 export type DispatchStatusInput = z.infer<typeof dispatchStatusSchema>;

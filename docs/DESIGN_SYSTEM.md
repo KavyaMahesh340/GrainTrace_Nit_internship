@@ -143,6 +143,14 @@ The operating profile uses the existing dark sheet pattern. It presents the sign
 
 Unauthorized and session-expired states use the same dark/paper contrast logic as the error and offline states. They name the state, explain the cause in operational language, and provide one real navigation action. Role-filtered navigation is a convenience layer; server permission checks remain the authority.
 
+## Offline and sync surfaces
+
+The salesman console uses a local queue ledger rather than a silent background spinner. Draft, queued, syncing, synced, and failed records carry visible text states; rust is reserved for failures, signal lime for pending work, forest for stable synced records, and outline for untouched drafts. Connection status, pending and failed counts, and last-sync time appear near the top of the console so field users can distinguish device storage from server truth.
+
+Touch controls remain at least 44px high, with a fixed bottom action bar, short step labels, wide selects, numeric keyboards, and live money previews. Offline records show their unique reference and error text with wrapped, non-truncating layout; editing is limited to draft and failed states, while queued and syncing records remain immutable until the attempt resolves. The install prompt appears only after the browser offers it and uses the same dark surface, monospaced label, and signal action language as the rest of the system.
+
+The public offline fallback is an editorial instruction sheet, not a fake synchronized dashboard. It states what is stored on the device, what is never cached, and the exact return path to retry from Orders.
+
 ## Anti-patterns
 
 Do not introduce:

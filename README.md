@@ -2,7 +2,7 @@
 
 Every packet produced. Every gram accounted for.
 
-GRAINTRACE is a manufacturing intelligence system for small food manufacturers, organized around the material journey from salesman order through audit. This repository contains **Phase 1: Foundation & Design System**, the **Phase 2 database, authentication, and role foundation**, the **Phase 3 pure domain engine and benchmark**, **Phase 4: Purchases and Inventory**, **Phase 5: Production and Batch DNA**, **Phase 6: Sales to Collection**, and **Phase 7: Finance, Reporting, and Audit**. Purchases, inventory, production, traceability, sales orders, dispatch, GST invoices, collections, payment corrections, ten reports, CSV/Excel/PDF exports, and the audit explorer are live database-backed workflows; recipes, finished goods, and offline synchronization sections remain explicitly labeled shells or limitations.
+GRAINTRACE is a manufacturing intelligence system for small food manufacturers, organized around the material journey from salesman order through audit. This repository contains **Phase 1: Foundation & Design System**, the **Phase 2 database, authentication, and role foundation**, the **Phase 3 pure domain engine and benchmark**, **Phase 4: Purchases and Inventory**, **Phase 5: Production and Batch DNA**, **Phase 6: Sales to Collection**, **Phase 7: Finance, Reporting, and Audit**, and **Phase 8: Offline-First Field Operations**. Purchases, inventory, production, traceability, sales orders, dispatch, GST invoices, collections, payment corrections, ten reports, CSV/Excel/PDF exports, the audit explorer, and durable offline order synchronization are live workflows; recipes and finished goods remain explicitly labeled shells.
 
 ## Prerequisites
 
@@ -138,7 +138,7 @@ src/lib/navigation.ts   Route registry
 src/tests/              Vitest setup and suites
 ```
 
-## Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, and Phase 7 scope
+## Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, Phase 7, and Phase 8 scope
 
 Implemented:
 
@@ -168,7 +168,9 @@ Implemented:
 - Real Batch DNA tracing from purchase sources and material lots through recipe, ledger, production, finished goods, dispatch, invoice, and customer evidence.
 - Customer master records with GST, address, credit terms, credit limit, and blocked status.
 - Sales orders with draft, submitted, approved, partially fulfilled, fulfilled, rejected, and cancelled states, with approval separated from creation.
-- Live salesman mobile console with guided entry, live calculations, order detail, and honest offline draft queuing.
+- Live salesman mobile console with guided entry, live calculations, order detail, durable local drafts, queued submissions, retry controls, and visible sync states.
+- Installable PWA with PNG icons, global registration, static-only service worker caching, and a public offline fallback that never stores authenticated pages or API data.
+- IndexedDB v2 order queue with legacy migration, unique idempotency keys, retry metadata, cached reference options, and an idempotent, permission-checked `/api/sales/sync` endpoint.
 - FEFO packet allocation, partial dispatch, backorders, and append-only finished-goods dispatch postings.
 - April-March document numbering for dispatch, invoices, credit notes, and receipts.
 - GST invoices from dispatched packets, multi-HSN support, printable PDFs, and full reversal credit notes.
@@ -183,7 +185,7 @@ Implemented:
 Not implemented:
 
 - Workflows outside purchases, inventory, production, Batch DNA, sales-to-collection, finance reporting, and audit, such as recipes and finished goods.
-- Offline write synchronization; the salesman console queues drafts honestly, but replay and workflow writes require a live server.
+- Offline mutation support beyond optimized salesman order entry; other workflows remain server-connected by design.
 - Upstream security advisories affecting the mandated Next.js 14 line and a transitive ExcelJS dependency; fixes require stack changes that were not authorized in Phase 1.
 
 ## Verification
@@ -192,7 +194,7 @@ Not implemented:
 npm run verify
 ```
 
-Responsive behavior is checked at 375px, 768px, 1024px, and 1440px with `npm run verify:responsive` while a server is running on port 3100. The script signs in with the seeded Owner account before checking protected routes:
+Responsive behavior is checked at 375px, 768px, 1024px, and 1440px with `npm run verify:responsive` while a server is running on port 3100. The script signs in with the seeded Owner and Salesman accounts, checks the mobile offline console, verifies PWA assets and the public fallback, then checks protected routes:
 
 ```powershell
 $env:BASE_URL = "http://localhost:3100"
@@ -216,4 +218,4 @@ npm run verify:responsive
 
 ## Git
 
-Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, and Phase 7 are committed checkpoints. Do not commit secrets or local database files. Demo passwords are documentation-only credentials for local evaluation.
+Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, Phase 7, and Phase 8 are committed checkpoints. Do not commit secrets or local database files. Demo passwords are documentation-only credentials for local evaluation.
