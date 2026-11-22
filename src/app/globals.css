@@ -1,0 +1,105 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 60 14% 94%;
+  --foreground: 120 6% 10%;
+  --card: 60 14% 96%;
+  --card-foreground: 120 6% 10%;
+  --popover: 60 14% 96%;
+  --popover-foreground: 120 6% 10%;
+  --primary: 84 85% 68%;
+  --primary-foreground: 120 6% 10%;
+  --secondary: 90 11% 85%;
+  --secondary-foreground: 120 6% 10%;
+  --muted: 90 11% 85%;
+  --muted-foreground: 110 3% 40%;
+  --accent: 84 85% 68%;
+  --accent-foreground: 120 6% 10%;
+  --destructive: 12 52% 51%;
+  --destructive-foreground: 60 14% 94%;
+  --border: 90 6% 76%;
+  --input: 90 6% 76%;
+  --ring: 150 26% 19%;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-paper font-sans text-obsidian antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  ::selection {
+    background: #c8f169;
+    color: #171a18;
+  }
+
+  :focus-visible {
+    outline: 2px solid #243d31;
+    outline-offset: 2px;
+  }
+
+  .surface-dark :focus-visible {
+    outline-color: #c8f169;
+  }
+}
+
+@layer components {
+  .mono-label {
+    @apply font-mono text-[10px] font-medium uppercase tracking-label;
+  }
+
+  .hairline-top {
+    @apply border-t border-obsidian/15;
+  }
+
+  .hairline-bottom {
+    @apply border-b border-obsidian/15;
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .preview-grid {
+    background-image:
+      linear-gradient(to right, rgba(23, 26, 24, 0.06) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(23, 26, 24, 0.06) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
+
+  .scrollbar-none {
+    scrollbar-width: none;
+  }
+
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

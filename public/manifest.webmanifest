@@ -1,0 +1,17 @@
+{
+  "name": "GRAINTRACE — Manufacturing Intelligence",
+  "short_name": "GRAINTRACE",
+  "description": "Every packet produced. Every gram accounted for.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F2F1EB",
+  "theme_color": "#171A18",
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
