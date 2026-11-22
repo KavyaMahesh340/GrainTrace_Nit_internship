@@ -37,6 +37,7 @@ const routeChecks = [
   { path: "/production?exception=EX-0142", expectedStatus: 200 },
   { path: "/batch-dna", expectedStatus: 200 },
   { path: "/offline", expectedStatus: 200 },
+  { path: "/unauthorized", expectedStatus: 200 },
   { path: "/does-not-exist", expectedStatus: 404 },
 ];
 
@@ -59,8 +60,35 @@ function watchConsole(page, label, errors) {
 }
 
 try {
+  const loginResponse = await fetch(`${baseUrl}/api/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: "owner@graintrace.local", password: "Owner!2026" }),
+  });
+  if (!loginResponse.ok) {
+    throw new Error(`Demo sign-in failed with status ${loginResponse.status}. Run npm run db:seed first.`);
+  }
+
+  const cookieHeaders = typeof loginResponse.headers.getSetCookie === "function"
+    ? loginResponse.headers.getSetCookie()
+    : [loginResponse.headers.get("set-cookie") ?? ""];
+  const sessionCookieHeader = cookieHeaders.find((header) => header.startsWith("graintrace_session="));
+  const sessionValue = sessionCookieHeader?.match(/graintrace_session=([^;]+)/)?.[1];
+  if (!sessionValue) {
+    throw new Error("Demo sign-in did not return a session cookie.");
+  }
+
+  const sessionCookie = {
+    name: "graintrace_session",
+    value: sessionValue,
+    url: baseUrl,
+    httpOnly: true,
+    sameSite: "Lax",
+  };
+
   for (const viewport of viewports) {
     const page = await browser.newPage();
+    await page.setCookie(sessionCookie);
     const errors = [];
     watchConsole(page, viewport.label, errors);
     await page.setViewport({ width: viewport.width, height: viewport.height });
@@ -124,6 +152,7 @@ try {
   }
 
   const routePage = await browser.newPage();
+  await routePage.setCookie(sessionCookie);
   const routeErrors = [];
   let allowExpected404 = false;
   routePage.on("console", (message) => {

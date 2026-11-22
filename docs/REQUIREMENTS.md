@@ -4,7 +4,7 @@
 
 Source of truth: `docs/PROBLEM.md`. The original file was absent from the workspace; the supplied brief was preserved there and used verbatim.
 
-GRAINTRACE is a manufacturing intelligence system for small food manufacturers. Phase 1 delivers the foundation, design system, application shell, factory overview, and honest route structure for future modules. It does **not** implement the business workflows.
+GRAINTRACE is a manufacturing intelligence system for small food manufacturers. Phase 1 delivered the foundation, design system, application shell, factory overview, and honest route structure. Phase 2 adds the normalized database, authentication, expiring sessions, and server-enforced role permissions. It does **not** implement the business workflows.
 
 A requirement is marked **explicit** when stated in the brief and **implied** when directly named by the material-journey chain but lacking detail. Implied items are recorded for planning only and are not implemented or expanded with invented rules.
 
@@ -179,3 +179,26 @@ Layout requirements:
 - Authentication and authorization.
 - Live data ingestion or device integration.
 - Real-time alerting.
+
+## Phase 2 requirements
+
+The Phase 2 brief supplied in conversation is the active source for this section. It does not replace the Phase 1 record above; it extends it with database, authentication, and role requirements.
+
+| ID | Requirement | Status |
+| --- | --- | --- |
+| P2-FR-01 | Build a normalized SQLite schema with Drizzle covering users, roles, sessions, customers, suppliers, products, raw materials, packaging materials, recipes/BOMs, sales orders, purchase orders, goods receipts, production runs, material batches, stock ledger, finished goods, invoices, payments, dispatches, and audit log. | Implemented |
+| P2-FR-02 | Add foreign keys, indexes, constraints, timestamps, integer money, and integer base-unit quantities. | Implemented |
+| P2-FR-03 | Commit generated migrations; never rely on runtime auto schema creation. | Implemented |
+| P2-FR-04 | Hash passwords securely and seed deterministic demo accounts without plaintext storage. | Implemented |
+| P2-FR-05 | Provide login, logout, session expiration, protected routes, and server-side session validation. | Implemented |
+| P2-FR-06 | Validate credentials and route references with Zod on the server; never trust client role or user IDs. | Implemented |
+| P2-FR-07 | Return safe generic authentication errors. | Implemented |
+| P2-FR-08 | Define `Owner`, `Admin`, `Salesman`, `Production`, and `Accountant` roles and document the permission matrix. | Implemented in `docs/ARCHITECTURE.md` |
+| P2-FR-09 | Enforce permissions on the server, not only in navigation. | Implemented |
+| P2-FR-10 | Provide a distinctive login experience, role-aware navigation, role-specific landing destinations, unauthorized and session-expired states, an operating profile, and confirmed logout. | Implemented |
+| P2-FR-11 | Seed deterministic demo accounts and necessary initial master data safely on rerun. | Implemented |
+| P2-FR-12 | Support transactions for related writes and use them in the seed. | Implemented |
+| P2-FR-13 | Test hashing, login success/failure, session validation, role access, invalid input, and duplicate users. | Implemented |
+| P2-FR-14 | Run migrations, seed, tests, build, and commit Phase 2. | Pending final verification and commit |
+
+Business workflows, quantity-conservation services, reports, and offline synchronization remain out of scope for Phase 2.

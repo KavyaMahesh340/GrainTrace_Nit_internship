@@ -13,10 +13,10 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { navigationGroups } from "@/lib/navigation";
+import type { NavigationGroup } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 
-export function MobileNav() {
+export function MobileNav({ navigationGroups }: { navigationGroups: NavigationGroup[] }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 

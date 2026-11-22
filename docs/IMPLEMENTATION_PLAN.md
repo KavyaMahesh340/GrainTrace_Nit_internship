@@ -26,21 +26,26 @@ Delivered:
 
 **Exit criteria:** typecheck, lint, tests, and production build pass; responsive review completed at 375px, 768px, 1024px, and 1440px; limitations documented.
 
-## Exact next phase
+## Phase 2 — Database, authentication, and roles (completed)
 
-**Phase 2 — Domain foundation and order-to-purchase workflows.**
+The active Phase 2 brief narrowed the next phase to persistence, authentication, and authorization. It explicitly deferred other business modules.
 
-Scope:
+Delivered:
 
-1. Run a requirements discovery session to capture the missing business rules: approval conditions, purchase rules, units, tolerance definitions, role permissions, and numbering formats.
-2. Expand the Drizzle schema into a normalized material-journey domain with an append-only transaction/quantity ledger that enforces the accountability principle.
-3. Add Zod schemas and typed service functions for orders, approvals, purchase orders, suppliers, and raw-material receipts.
-4. Implement the first four journey stages as real workflows: salesman order, approval, purchase, and raw material inventory.
-5. Replace the relevant preview sections on the factory overview with repository-backed data and explicit loading/error behavior.
-6. Add integration tests for quantity conservation, state transitions, and authorization once rules are supplied.
-7. Keep Batch DNA, production, finance, dispatch, collection, and audit as clearly labeled future modules until their phases.
+1. A thirty-one-table normalized Drizzle schema with foreign keys, indexes, constraints, timestamps, integer money, and integer base-unit quantities.
+2. Committed migrations plus a deterministic, rerunnable seed transaction for the factory, roles, five demo users, and baseline master data.
+3. bcrypt password hashing, generic authentication errors, and role-derived login redirects.
+4. Database-backed sessions with hashed tokens, twelve-hour expiration, httpOnly cookies, and server-side revocation on logout.
+5. A documented permission matrix with server-enforced route guards and permission-filtered navigation.
+6. Standalone login and session-expired pages, plus unauthorized, operating-profile, and confirmed-logout experiences.
+7. Zod validation for credentials, session tokens, and route references; no client role or user ID is trusted.
+8. Authentication tests covering hashing, login success/failure, session states, permissions, validation, and duplicate users.
 
-**Phase 2 does not begin automatically after Phase 1.**
+**Exit criteria:** migrations, seed, typecheck, lint, tests, production build, and responsive checks pass; Phase 2 is committed before stopping.
+
+## Following phase
+
+Order-to-purchase workflows and repository-backed overview data remain deferred until their business rules are supplied. No subsequent phase begins automatically.
 
 ## Phase 3 — Recipe, production, and finished goods
 

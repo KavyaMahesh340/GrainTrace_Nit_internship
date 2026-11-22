@@ -37,12 +37,13 @@ const sideClasses = {
 interface SheetContentProps
   extends React.ComponentPropsWithoutRef<typeof SheetPrimitive.Content> {
   side?: keyof typeof sideClasses;
+  closeLabel?: string;
 }
 
 const SheetContent = React.forwardRef<
   React.ElementRef<typeof SheetPrimitive.Content>,
   SheetContentProps
->(({ side = "right", className, children, ...props }, ref) => (
+>(({ side = "right", className, children, closeLabel = "Close navigation", ...props }, ref) => (
   <SheetPortal>
     <SheetOverlay />
     <SheetPrimitive.Content
@@ -57,7 +58,7 @@ const SheetContent = React.forwardRef<
       {children}
       <SheetPrimitive.Close className="absolute right-5 top-5 rounded-sm p-1 text-paper/60 transition-colors hover:bg-paper/10 hover:text-paper">
         <X className="h-4 w-4" aria-hidden="true" />
-        <span className="sr-only">Close navigation</span>
+        <span className="sr-only">{closeLabel}</span>
       </SheetPrimitive.Close>
     </SheetPrimitive.Content>
   </SheetPortal>

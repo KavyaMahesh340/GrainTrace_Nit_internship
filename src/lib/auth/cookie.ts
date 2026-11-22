@@ -1,0 +1,23 @@
+import type { NextResponse } from "next/server";
+import { SESSION_COOKIE_NAME, SESSION_MAX_AGE_SECONDS } from "./constants";
+
+export function setSessionCookie(response: NextResponse, token: string, expiresAt: string) {
+  response.cookies.set(SESSION_COOKIE_NAME, token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: SESSION_MAX_AGE_SECONDS,
+    expires: new Date(expiresAt),
+  });
+}
+
+export function clearSessionCookie(response: NextResponse) {
+  response.cookies.set(SESSION_COOKIE_NAME, "", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 0,
+  });
+}

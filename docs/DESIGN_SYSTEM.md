@@ -135,6 +135,14 @@ The composition deliberately avoids a sidebar plus KPI-card template. Data is pr
 - Respect reduced-motion preferences.
 - Ensure body and secondary text do not rely on low-contrast machine grey for critical information.
 
+## Authentication surfaces
+
+The login page is a two-column operating console, not a generic centered card. The dark column carries product identity and the journey sequence; the paper column carries the form. Technical labels, monospaced credentials, hairline dividers, and the signal-lime action preserve the industrial editorial language.
+
+The operating profile uses the existing dark sheet pattern. It presents the signed-in identity, role, landing view, and permission count as a compact ledger. Sign-out requires an explicit confirmation action and states that the session is revoked on the server.
+
+Unauthorized and session-expired states use the same dark/paper contrast logic as the error and offline states. They name the state, explain the cause in operational language, and provide one real navigation action. Role-filtered navigation is a convenience layer; server permission checks remain the authority.
+
 ## Anti-patterns
 
 Do not introduce:

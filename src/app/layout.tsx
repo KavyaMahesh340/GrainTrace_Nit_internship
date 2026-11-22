@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
-import { AppShell } from "@/components/layout/app-shell";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -38,9 +37,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} font-sans`}>
-        <AppShell>{children}</AppShell>
-      </body>
+      <body className={`${geistSans.variable} ${geistMono.variable} font-sans`}>{children}</body>
     </html>
   );
 }

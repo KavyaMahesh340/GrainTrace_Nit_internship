@@ -7,6 +7,9 @@ export default defineConfig({
   },
   test: {
     environment: "jsdom",
+    env: {
+      DATABASE_URL: ":memory:",
+    },
     globals: false,
     setupFiles: ["./src/tests/setup.ts"],
     include: ["src/**/*.test.ts", "src/**/*.test.tsx"],

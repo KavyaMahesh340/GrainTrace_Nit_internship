@@ -2,7 +2,7 @@
 
 Every packet produced. Every gram accounted for.
 
-GRAINTRACE is a manufacturing intelligence system for small food manufacturers, organized around the material journey from salesman order through audit. This repository contains **Phase 1: Foundation & Design System** only. All displayed data is explicitly labeled preview data; no business workflows are active.
+GRAINTRACE is a manufacturing intelligence system for small food manufacturers, organized around the material journey from salesman order through audit. This repository contains **Phase 1: Foundation & Design System** plus the **Phase 2 database, authentication, and role foundation**. Operational preview sections remain explicitly labeled; business workflows are still not active.
 
 ## Prerequisites
 
@@ -19,12 +19,13 @@ cd nit_internship
 npm install
 Copy-Item .env.example .env
 npm run db:migrate
+npm run db:seed
 npm run dev
 ```
 
 Then open `http://localhost:3000`.
 
-The initial Drizzle migration is committed, so `npm run db:generate` is not required for a fresh setup. Run it only after changing `src/lib/db/schema.ts`:
+All Drizzle migrations are committed, so `npm run db:generate` is not required for a fresh setup. `npm run db:seed` creates the demo factory, roles, five demo users, and baseline master data; it is deterministic and safe to rerun. Run generation only after changing `src/lib/db/schema.ts`:
 
 ```powershell
 npm run db:generate
@@ -51,6 +52,7 @@ npm run db:studio
 | `npm run verify:responsive` | Check required breakpoints and console errors against a running server on port 3100. |
 | `npm run db:generate` | Generate a SQL migration from the Drizzle schema. |
 | `npm run db:migrate` | Apply committed migrations to SQLite. |
+| `npm run db:seed` | Seed deterministic demo users and baseline master data. |
 | `npm run db:studio` | Open Drizzle Studio. |
 | `npm run verify` | Run typecheck, lint, tests, and production build in sequence. |
 
@@ -58,7 +60,9 @@ npm run db:studio
 
 | Route | Status |
 | --- | --- |
-| `/` | Factory overview with preview data |
+| `/login` | Standalone role-aware sign-in console |
+| `/session-expired` | Expired or revoked session state |
+| `/` | Protected factory overview with preview data |
 | `/orders` | Phase 2 route shell |
 | `/purchases` | Phase 2 route shell |
 | `/inventory` | Phase 2 route shell |
@@ -70,9 +74,26 @@ npm run db:studio
 | `/collections` | Phase 2 route shell |
 | `/audit` | Phase 2 route shell |
 | `/batch-dna` | Batch DNA concept visualization |
-| `/offline` | Service-worker offline fallback |
+| `/offline` | Protected service-worker offline fallback |
+| `/unauthorized` | Role-based access denied state |
+| `/api/auth/login` | Validates credentials and sets the httpOnly session cookie |
+| `/api/auth/logout` | Revokes the session on the server and clears the cookie |
 
-Route shells are real destinations that state their status. They do not simulate workflows.
+All application routes except `/login`, `/session-expired`, the authentication APIs, and the root not-found state require a valid server-validated session. Route shells are real destinations that state their status. They do not simulate workflows.
+
+## Demo accounts
+
+Run `npm run db:seed` before signing in. The sign-in console can fill these credentials with one click.
+
+| Role | Email | Password | Landing view |
+| --- | --- | --- | --- |
+| Owner | `owner@graintrace.local` | `Owner!2026` | `/` |
+| Admin | `admin@graintrace.local` | `Admin!2026` | `/` |
+| Salesman | `salesman@graintrace.local` | `Sales!2026` | `/orders` |
+| Production | `production@graintrace.local` | `Production!2026` | `/production` |
+| Accountant | `accountant@graintrace.local` | `Accounts!2026` | `/invoices` |
+
+Passwords are stored as bcrypt hashes. Sessions store only a SHA-256 hash of the random session token, expire after twelve hours, and are revoked on sign-out. The full permission matrix is documented in `docs/ARCHITECTURE.md`.
 
 ## Project structure
 
@@ -80,13 +101,15 @@ Route shells are real destinations that state their status. They do not simulate
 docs/                   Source brief, requirements, plan, architecture, design system
 drizzle/                Generated SQL migrations
 public/                 PWA manifest, icon, service worker
-src/app/                App Router pages and global styles
-src/components/layout/  Application shell and navigation
+scripts/                Seed and responsive verification runners
+src/app/                App Router pages, auth APIs, and global styles
+src/components/layout/  Application shell, navigation, and user menu
 src/components/overview/ Factory overview sections
 src/components/system/  System-level client components
 src/components/ui/      Reusable shadcn-style primitives
+src/lib/auth/           Password hashing, sessions, permissions, and login service
 src/lib/data/           Zod-validated preview snapshot
-src/lib/db/             Drizzle schema, connection, migration runner
+src/lib/db/             Drizzle schema, connection, migrations, and seed
 src/lib/domain/         Preview schema and inferred types
 src/lib/offline/        IndexedDB mutation queue
 src/lib/format.ts       Presentation helpers
@@ -94,7 +117,7 @@ src/lib/navigation.ts   Route registry
 src/tests/              Vitest setup and suites
 ```
 
-## Phase 1 scope
+## Phase 1 and Phase 2 foundation scope
 
 Implemented:
 
@@ -106,11 +129,17 @@ Implemented:
 - Explicit route structure for all eleven material-journey stages.
 - PWA manifest, service worker shell cache, and native IndexedDB mutation queue.
 - Reusable UI primitives and a Zod-validated preview dataset.
+- Thirty-table normalized Drizzle schema with foreign keys, indexes, checks, timestamps, integer money, and integer quantities.
+- SQLite migrations, deterministic seed, five role-based demo accounts, and bcrypt password hashing.
+- Expiring database-backed sessions with hashed tokens, httpOnly cookies, and server-side revocation.
+- Role permission matrix, protected layouts and routes, role-filtered navigation, and role-specific landing views.
+- Standalone sign-in, unauthorized, session-expired, operating profile, and confirmed sign-out experiences.
+- Server-side Zod validation for credentials and route references; no client role or user ID is trusted.
 
 Not implemented:
 
-- Any business workflow, approval, transaction, or quantity ledger.
-- Authentication and role permissions.
+- Any business workflow, approval, transaction, or quantity ledger page.
+- Quantity conservation enforcement in workflow services; the schema and ledger tables exist, but no workflow writes to them yet.
 - Report generation despite the report libraries being installed.
 - Live database-backed pages.
 - Offline write synchronization.
@@ -123,7 +152,7 @@ Not implemented:
 npm run verify
 ```
 
-Responsive behavior is checked at 375px, 768px, 1024px, and 1440px with `npm run verify:responsive` while a server is running on port 3100:
+Responsive behavior is checked at 375px, 768px, 1024px, and 1440px with `npm run verify:responsive` while a server is running on port 3100. The script signs in with the seeded Owner account before checking protected routes:
 
 ```powershell
 $env:BASE_URL = "http://localhost:3100"
@@ -146,4 +175,4 @@ npm run verify:responsive
 
 ## Git
 
-Phase 1 is committed as a foundation checkpoint. Do not commit secrets or local database files.
+Phase 1 is committed as a foundation checkpoint. Do not commit secrets or local database files. Demo passwords are documentation-only credentials for local evaluation.

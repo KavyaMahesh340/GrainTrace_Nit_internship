@@ -4,7 +4,8 @@ import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import * as schema from "./schema";
 
-const databasePath = resolve(process.cwd(), process.env.DATABASE_URL ?? "./data/graintrace.db");
+const configuredPath = process.env.DATABASE_URL ?? "./data/graintrace.db";
+const databasePath = configuredPath === ":memory:" ? ":memory:" : resolve(process.cwd(), configuredPath);
 let sqlite: InstanceType<typeof Database> | null = null;
 
 export function getDatabasePath() {
@@ -13,7 +14,9 @@ export function getDatabasePath() {
 
 export function getDb() {
   if (!sqlite) {
-    mkdirSync(dirname(databasePath), { recursive: true });
+    if (databasePath !== ":memory:") {
+      mkdirSync(dirname(databasePath), { recursive: true });
+    }
     sqlite = new Database(databasePath);
     sqlite.pragma("journal_mode = WAL");
     sqlite.pragma("foreign_keys = ON");
