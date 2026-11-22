@@ -50,6 +50,13 @@
       "when": 1795354926129,
       "tag": "0006_massive_thena",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1795361812190,
+      "tag": "0007_violet_abomination",
+      "breakpoints": true
     }
   ]
 }

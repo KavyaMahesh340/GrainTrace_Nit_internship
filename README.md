@@ -2,13 +2,14 @@
 
 Every packet produced. Every gram accounted for.
 
-GRAINTRACE is a manufacturing intelligence system for small food manufacturers, organized around the material journey from salesman order through audit. This repository contains **Phase 1: Foundation & Design System**, the **Phase 2 database, authentication, and role foundation**, the **Phase 3 pure domain engine and benchmark**, **Phase 4: Purchases and Inventory**, **Phase 5: Production and Batch DNA**, **Phase 6: Sales to Collection**, **Phase 7: Finance, Reporting, and Audit**, and **Phase 8: Offline-First Field Operations**. Purchases, inventory, production, traceability, sales orders, dispatch, GST invoices, collections, payment corrections, ten reports, CSV/Excel/PDF exports, the audit explorer, and durable offline order synchronization are live workflows; recipes and finished goods remain explicitly labeled shells.
+GRAINTRACE is a manufacturing intelligence system for small food manufacturers, organized around the material journey from salesman order through audit. This repository contains **Phase 1: Foundation & Design System**, the **Phase 2 database, authentication, and role foundation**, the **Phase 3 pure domain engine and benchmark**, **Phase 4: Purchases and Inventory**, **Phase 5: Production and Batch DNA**, **Phase 6: Sales to Collection**, **Phase 7: Finance, Reporting, and Audit**, **Phase 8: Offline-First Field Operations**, and **Phase 9: Final Audit and Verification**. Purchases, inventory, production, traceability, sales orders, dispatch, GST invoices, collections, payment corrections, ten reports, CSV/Excel/PDF exports, the audit explorer, and durable offline order synchronization are live workflows; recipes and finished goods remain explicitly labeled shells.
 
 ## Prerequisites
 
 - Node.js 20 LTS or newer (verified on Node.js 22.19.0)
 - npm 10 or newer (verified on npm 11.21.1)
 - Git
+- Docker with Compose, only for the optional container path below
 
 ## Exact setup instructions
 
@@ -37,6 +38,16 @@ To inspect the local SQLite database:
 ```powershell
 npm run db:studio
 ```
+
+### Optional Docker path
+
+The repository includes a production Dockerfile, `.dockerignore`, and `docker-compose.yml`. The container applies migrations, runs the deterministic seed, and starts the built app with SQLite persisted in the `graintrace-data` volume:
+
+```powershell
+docker compose up --build
+```
+
+Then open `http://localhost:3000`. Stop it with `docker compose down`; add `-v` to remove the persisted database volume. The Docker CLI was unavailable in the Phase 9 audit environment, so the image was authored but not built or run locally.
 
 ## Scripts
 
@@ -75,7 +86,7 @@ npm run db:studio
 | `/reports` | Live ten-report workspace with CSV, Excel, and PDF exports |
 | `/audit` | Live audit explorer and source-to-transaction auditor trail |
 | `/batch-dna` | Live source-to-customer traceability instrument |
-| `/offline` | Protected service-worker offline fallback |
+| `/offline` | Public service-worker fallback with local queue and cached reference counts |
 | `/unauthorized` | Role-based access denied state |
 | `/api/auth/login` | Validates credentials and sets the httpOnly session cookie |
 | `/api/auth/logout` | Revokes the session on the server and clears the cookie |
@@ -90,7 +101,7 @@ npm run db:studio
 | `/api/reports/*` | Server-authorized report query and CSV/Excel/PDF export APIs |
 | `/api/audit/*` | Server-authorized audit entry and auditor trail APIs |
 
-All application routes except `/login`, `/session-expired`, the authentication APIs, and the root not-found state require a valid server-validated session. Purchases, inventory, production, Batch DNA, sales orders, dispatch, invoices, collections, reports, and audit read and write through server-side workflow services; the remaining route shells state their status without simulating workflows.
+All application routes except `/login`, `/session-expired`, `/offline`, the authentication APIs, and the root not-found state require a valid server-validated session. The public offline fallback displays only local queue and cached reference metadata. Purchases, inventory, production, Batch DNA, sales orders, dispatch, invoices, collections, reports, and audit read and write through server-side workflow services; the remaining route shells state their status without simulating workflows.
 
 ## Demo accounts
 
@@ -138,7 +149,7 @@ src/lib/navigation.ts   Route registry
 src/tests/              Vitest setup and suites
 ```
 
-## Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, Phase 7, and Phase 8 scope
+## Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, Phase 7, Phase 8, and Phase 9 scope
 
 Implemented:
 
@@ -150,8 +161,8 @@ Implemented:
 - Explicit route structure for all eleven material-journey stages.
 - PWA manifest, service worker shell cache, and native IndexedDB mutation queue.
 - Reusable UI primitives and a Zod-validated preview dataset.
-- Thirty-table normalized Drizzle schema with foreign keys, indexes, checks, timestamps, integer money, and integer quantities.
-- SQLite migrations, deterministic seed, five role-based demo accounts, and bcrypt password hashing.
+- Thirty-eight-table normalized Drizzle schema with foreign keys, indexes, checks, timestamps, integer money, integer quantities, and append-only stock movement keys.
+- SQLite migrations, deterministic seed, six role-based demo accounts, and bcrypt password hashing.
 - Expiring database-backed sessions with hashed tokens, httpOnly cookies, and server-side revocation.
 - Role permission matrix, protected layouts and routes, role-filtered navigation, and role-specific landing views.
 - Standalone sign-in, unauthorized, session-expired, operating profile, and confirmed sign-out experiences.
@@ -181,6 +192,9 @@ Implemented:
 - Ten live reports covering sales, GST, collections, receivables aging, inventory value, production variance, purchases, customer ledger, product profitability, and stock movements.
 - Server-filtered CSV, Excel, and PDF report exports using the same workflows and integer-paise domain calculations as the on-screen reports.
 - Filterable audit explorer, event before/after inspector, auditor role, and source-to-transaction trails for invoices and batches.
+- Single ledger-authoritative balance posting, immutable stock movement keys, audited dispatch/invoice reversals, and corrected finance report signs and margins.
+- Recoverable offline sync states, adaptive queue indexes, truthful offline fallback content, and service worker install resilience.
+- Docker production configuration plus final audit, benchmark result, and clean-database verification evidence.
 
 Not implemented:
 
@@ -193,6 +207,8 @@ Not implemented:
 ```powershell
 npm run verify
 ```
+
+The latest verified run passed typecheck, lint, 49 tests, and the production build. The clean-database benchmark evidence is recorded in `docs/BENCHMARK_RESULTS.md`, and the complete defect/evidence audit is recorded in `docs/FINAL_AUDIT.md`.
 
 Responsive behavior is checked at 375px, 768px, 1024px, and 1440px with `npm run verify:responsive` while a server is running on port 3100. The script signs in with the seeded Owner and Salesman accounts, checks the mobile offline console, verifies PWA assets and the public fallback, then checks protected routes:
 
@@ -214,8 +230,10 @@ npm run verify:responsive
 - `docs/IMPLEMENTATION_PLAN.md` — phase plan and exact next phase
 - `docs/ARCHITECTURE.md` — technical architecture and decisions
 - `docs/BENCHMARK.md` — Phase 3 deterministic calculation report
+- `docs/BENCHMARK_RESULTS.md` — Phase 9 clean-database benchmark verification
+- `docs/FINAL_AUDIT.md` — Phase 9 final engineering audit and evidence
 - `docs/DESIGN_SYSTEM.md` — visual and interaction system
 
 ## Git
 
-Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, Phase 7, and Phase 8 are committed checkpoints. Do not commit secrets or local database files. Demo passwords are documentation-only credentials for local evaluation.
+Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, Phase 7, Phase 8, and Phase 9 are committed checkpoints. Do not commit secrets or local database files. Demo passwords are documentation-only credentials for local evaluation.

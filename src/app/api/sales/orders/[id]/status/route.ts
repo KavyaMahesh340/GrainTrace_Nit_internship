@@ -6,7 +6,7 @@ import { salesOrderStatusSchema } from "@/lib/workflows/validation";
 export const runtime = "nodejs";
 
 export async function POST(request: Request, { params }: { params: { id: string } }) {
-  const actor = requireApiActor("orders:view");
+  const actor = requireApiActor("orders:manage");
   if (actor instanceof NextResponse) return actor;
   const body = await readApiJson(request);
   if (body instanceof NextResponse) return body;

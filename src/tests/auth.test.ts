@@ -76,6 +76,24 @@ describe("authentication", () => {
     }
   });
 
+  it("signs in the seeded auditor role", () => {
+    const result = loginWithCredentials({
+      email: "auditor@graintrace.local",
+      password: "Auditor!2026",
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      const session = resolveSessionToken(result.token);
+      expect(session.status).toBe("authenticated");
+      if (session.status === "authenticated") {
+        expect(session.user.role).toBe("auditor");
+        expect(session.user.permissions).toContain("audit:view");
+        expect(session.user.permissions).not.toContain("orders:manage");
+      }
+    }
+  });
+
   it("rejects absent, malformed, expired, and revoked sessions", () => {
     expect(resolveSessionToken(undefined).status).toBe("absent");
     expect(resolveSessionToken("not-a-token").status).toBe("invalid");

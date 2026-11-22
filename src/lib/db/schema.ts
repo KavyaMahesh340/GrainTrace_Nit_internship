@@ -856,6 +856,7 @@ export const stockLedger = sqliteTable(
       onDelete: "restrict",
     }),
     transactionType: text("transaction_type").notNull(),
+    movementKey: text("movement_key"),
     referenceType: text("reference_type").notNull(),
     referenceId: integer("reference_id").notNull(),
     referenceNumber: text("reference_number").notNull(),
@@ -874,6 +875,7 @@ export const stockLedger = sqliteTable(
   },
   (table) => [
     index("stock_ledger_factory_idx").on(table.factoryId),
+    uniqueIndex("stock_ledger_movement_key_unique").on(table.factoryId, table.movementKey),
     index("stock_ledger_material_batch_idx").on(table.materialBatchId),
     index("stock_ledger_packaging_batch_idx").on(table.packagingBatchId),
     index("stock_ledger_finished_good_idx").on(table.finishedGoodId),
@@ -1027,7 +1029,7 @@ export const payments = sqliteTable(
     check("payments_direction_check", sql`${table.direction} in ('credit', 'debit')`),
     check(
       "payments_status_check",
-      sql`${table.status} in ('posted', 'corrected', 'correction')`,
+      sql`${table.status} in ('posted', 'partially_corrected', 'corrected', 'correction')`,
     ),
   ],
 );

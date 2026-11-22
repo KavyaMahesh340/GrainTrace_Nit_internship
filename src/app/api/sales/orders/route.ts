@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { apiErrorResponse, readApiJson, requireApiActor } from "@/lib/workflows/api";
 import { createSalesOrder, listSalesOrders } from "@/lib/workflows/sales";
-import type { SalesOrderInput } from "@/lib/workflows/validation";
+import { salesOrderInputSchema } from "@/lib/workflows/validation";
 
 export const runtime = "nodejs";
 
@@ -24,7 +24,7 @@ export async function POST(request: Request) {
   const body = await readApiJson(request);
   if (body instanceof NextResponse) return body;
   try {
-    const order = createSalesOrder(actor, body as SalesOrderInput);
+    const order = createSalesOrder(actor, salesOrderInputSchema.parse(body));
     return NextResponse.json({ ok: true, order }, { status: 201 });
   } catch (error) {
     return apiErrorResponse(error);

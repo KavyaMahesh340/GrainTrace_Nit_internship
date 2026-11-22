@@ -153,6 +153,23 @@ Delivered scope:
 
 **Exit criteria:** schema migration applies, typecheck and lint pass, tests and Phase 3 benchmark pass, production build succeeds, and Phase 8 is committed before stopping.
 
+## Phase 9 — Final Audit and Verification (completed)
+
+The Phase 9 brief required a strict final engineering audit, clean-database benchmark evidence, defect fixes, final documentation, and a final Git checkpoint.
+
+Delivered scope:
+
+1. Independent finance/inventory, workflow/security, offline/PWA/UI, and requirements/evidence audits.
+2. Ledger-authoritative stored balances with deterministic stock movement keys and a backfilled unique index migration.
+3. Complete dispatch and invoice cancellation reversals, corrected finance reports, partial-payment status accuracy, and auditor role validation.
+4. Zod request validation and structured error responses on mutation and report/audit APIs, with corrected order-status permissions.
+5. Recoverable offline queue states, request timeouts, adaptive IndexedDB indexes, truthful offline fallback content, and resilient service worker caching.
+6. Phase 9 regression tests for reversals, roles, reports, payment status, queue recovery, partial sync success, and API validation.
+7. `docs/FINAL_AUDIT.md`, `docs/BENCHMARK_RESULTS.md`, README updates, and Docker production configuration.
+8. Clean migration/seed, benchmark suite, typecheck, lint, full test suite, production build, and responsive/PWA verification.
+
+**Exit criteria:** all mandated verification commands pass, benchmark values are unchanged, final docs are accurate, and Phase 9 is committed before stopping.
+
 No subsequent phase begins automatically.
 
 ## Dependency policy

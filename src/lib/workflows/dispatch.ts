@@ -257,7 +257,6 @@ export function createDispatch(actor: WorkflowActor, input: DispatchInput): Disp
 
     const allocatedPackets = new Set<number>();
     const packetsByFinishedGood = new Map<number, number>();
-    const gramsByFinishedGood = new Map<number, number>();
     const allocations: { itemId: number; packet: AvailablePacket }[] = [];
 
     for (const line of input.lines) {
@@ -275,10 +274,6 @@ export function createDispatch(actor: WorkflowActor, input: DispatchInput): Disp
         packetsByFinishedGood.set(
           packet.finishedGoodId,
           (packetsByFinishedGood.get(packet.finishedGoodId) ?? 0) + 1,
-        );
-        gramsByFinishedGood.set(
-          packet.finishedGoodId,
-          (gramsByFinishedGood.get(packet.finishedGoodId) ?? 0) + packet.quantityGrams,
         );
       }
     }
@@ -349,11 +344,6 @@ export function createDispatch(actor: WorkflowActor, input: DispatchInput): Disp
         occurredAt: input.dispatchedAt,
         createdByUserId: actor.userId,
       });
-      const grams = gramsByFinishedGood.get(finishedGoodId) ?? 0;
-      tx.update(finishedGoods)
-        .set({ availableGrams: sql`${finishedGoods.availableGrams} - ${grams}`, updatedAt: now })
-        .where(eq(finishedGoods.id, finishedGoodId))
-        .run();
     }
 
     tx.update(finishedGoodPackets)
@@ -396,15 +386,89 @@ export function updateDispatchStatus(actor: WorkflowActor, dispatchNumber: strin
       .where(and(eq(dispatches.factoryId, actor.factoryId), eq(dispatches.dispatchNumber, dispatchNumber)))
       .get();
     if (!dispatch) throw new WorkflowError("Dispatch not found.", "not_found", 404);
-    if (status === "cancelled" && dispatch.status === "delivered") {
-      throw new WorkflowError("A delivered dispatch cannot be cancelled.", "invalid_transition");
+    const allowedTransitions: Record<string, readonly string[]> = {
+      planned: ["in_transit", "cancelled"],
+      in_transit: ["delivered", "cancelled"],
+      delivered: [],
+      cancelled: [],
+    };
+    if (!allowedTransitions[dispatch.status]?.includes(status)) {
+      throw new WorkflowError(`A ${dispatch.status} dispatch cannot move to ${status}.`, "invalid_transition");
     }
 
     const now = new Date().toISOString();
+    if (status === "cancelled") {
+      const items = tx
+        .select({
+          packetId: finishedGoodPackets.id,
+          finishedGoodId: finishedGoodPackets.finishedGoodId,
+          salesOrderItemId: dispatchItems.salesOrderItemId,
+          quantityPackets: dispatchItems.quantityPackets,
+        })
+        .from(dispatchItems)
+        .innerJoin(finishedGoodPackets, eq(dispatchItems.finishedGoodPacketId, finishedGoodPackets.id))
+        .where(eq(dispatchItems.dispatchId, dispatch.id))
+        .all();
+      const packetsByFinishedGood = new Map<number, number>();
+      for (const item of items) {
+        packetsByFinishedGood.set(
+          item.finishedGoodId,
+          (packetsByFinishedGood.get(item.finishedGoodId) ?? 0) + item.quantityPackets,
+        );
+        if (item.salesOrderItemId !== null) {
+          tx.update(salesOrderItems)
+            .set({
+              fulfilledPackets: sql`${salesOrderItems.fulfilledPackets} - ${item.quantityPackets}`,
+              updatedAt: now,
+            })
+            .where(eq(salesOrderItems.id, item.salesOrderItemId))
+            .run();
+        }
+        tx.update(finishedGoodPackets)
+          .set({ status: "available", updatedAt: now })
+          .where(eq(finishedGoodPackets.id, item.packetId))
+          .run();
+      }
+      for (const [finishedGoodId, packetCount] of Array.from(packetsByFinishedGood.entries())) {
+        postLedgerEntry(tx, {
+          factoryId: actor.factoryId,
+          target: { type: "finished_good", id: finishedGoodId },
+          transactionType: "dispatch_reversal",
+          referenceType: "DISPATCH_CANCELLATION",
+          referenceId: dispatch.id,
+          referenceNumber: dispatchNumber,
+          baseUnit: "pieces",
+          quantityDelta: packetCount,
+          occurredAt: now,
+          createdByUserId: actor.userId,
+          movementKey: `DISPATCH_CANCELLATION:${dispatchNumber}:finished_good:${finishedGoodId}`,
+        });
+      }
+      if (dispatch.salesOrderId !== null) {
+        const orderItems = tx
+          .select({
+            quantityPackets: salesOrderItems.quantityPackets,
+            fulfilledPackets: salesOrderItems.fulfilledPackets,
+          })
+          .from(salesOrderItems)
+          .where(eq(salesOrderItems.salesOrderId, dispatch.salesOrderId))
+          .all();
+        const anyFulfilled = orderItems.some((item) => item.fulfilledPackets > 0);
+        const fullyFulfilled = orderItems.every((item) => item.fulfilledPackets >= item.quantityPackets);
+        tx.update(salesOrders)
+          .set({
+            status: fullyFulfilled ? "fulfilled" : anyFulfilled ? "partially_fulfilled" : "approved",
+            updatedAt: now,
+          })
+          .where(eq(salesOrders.id, dispatch.salesOrderId))
+          .run();
+      }
+    }
+
     tx.update(dispatches)
       .set({
         status,
-        deliveredAt: status === "delivered" ? dispatch.deliveredAt ?? now : dispatch.deliveredAt,
+        deliveredAt: status === "delivered" ? dispatch.deliveredAt ?? now : status === "cancelled" ? null : dispatch.deliveredAt,
         updatedAt: now,
       })
       .where(eq(dispatches.id, dispatch.id))

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { apiErrorResponse, readApiJson, requireApiActor } from "@/lib/workflows/api";
 import { createCustomer, listCustomers } from "@/lib/workflows/customers";
-import type { CustomerInput } from "@/lib/workflows/validation";
+import { customerInputSchema } from "@/lib/workflows/validation";
 
 export const runtime = "nodejs";
 
@@ -17,7 +17,7 @@ export async function POST(request: Request) {
   const body = await readApiJson(request);
   if (body instanceof NextResponse) return body;
   try {
-    const customer = createCustomer(actor, body as CustomerInput);
+    const customer = createCustomer(actor, customerInputSchema.parse(body));
     return NextResponse.json({ ok: true, customer }, { status: 201 });
   } catch (error) {
     return apiErrorResponse(error);

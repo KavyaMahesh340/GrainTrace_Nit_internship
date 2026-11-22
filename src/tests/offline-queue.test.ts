@@ -8,6 +8,7 @@ import {
   markOfflineOrderSynced,
   markOfflineOrderSyncing,
   queueOfflineOrder,
+  resetStaleSyncingOrders,
   saveOfflineOrder,
   setLastSuccessfulSync,
 } from "@/lib/offline/queue";
@@ -79,6 +80,16 @@ describe("offline order queue", () => {
     expect((await getOfflineQueueSummary()).synced).toBe(1);
   });
 
+  it("recovers stale syncing records", async () => {
+    const record = await saveOfflineOrder(payload, { state: "queued" });
+    await markOfflineOrderSyncing(record.id);
+
+    expect(await resetStaleSyncingOrders(-1)).toBe(1);
+    const records = await listOfflineOrders();
+    expect(records[0]?.state).toBe("failed");
+    expect(records[0]?.lastError).toMatch(/interrupted/i);
+  });
+
   it("rejects invalid payloads", async () => {
     await expect(saveOfflineOrder({ ...payload, orderNumber: "" })).rejects.toThrow();
   });
@@ -118,5 +129,16 @@ describe("offline order queue", () => {
     expect(records[0]?.orderNumber).toBe(payload.orderNumber);
     expect(records[0]?.idempotencyKey).toBe("legacy-legacy-1");
     expect(records[0]?.payload.unitPrice).toBe("150.00");
+
+    const indexAvailable = await new Promise<boolean>((resolve, reject) => {
+      const request = indexedDB.open("graintrace-offline", 2);
+      request.onsuccess = () => {
+        const db = request.result;
+        resolve(db.transaction("mutation_queue").objectStore("mutation_queue").indexNames.contains("idempotencyKey"));
+        db.close();
+      };
+      request.onerror = () => reject(request.error);
+    });
+    expect(indexAvailable).toBe(true);
   });
 });

@@ -1,9 +1,10 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { permissionsFor, type RoleName } from "@/lib/auth/permissions";
 import {
   creditNotes,
   customers,
+  dispatchItems,
   finishedGoodPackets,
   finishedGoods,
   materialBatches,
@@ -439,6 +440,9 @@ describe("phase 6 sales, dispatch, invoice, and collection workflows", () => {
     expect(cancelled.status).toBe("cancelled");
     expect(cancelled.creditNoteNumber).toMatch(/^CN\/TN\/\d{4}-\d{2}\/\d{4}$/);
     expect(cancelled.creditNotePaise).toBe(invoice.totalPaise);
+    expect(cancelled.amountPaidPaise).toBe(0);
+    expect(getSalesInvoiceCandidates(owner.factoryId, orderNumber)?.[0].availableToInvoicePackets).toBe(2);
+    expect(listPayments(owner.factoryId).filter((payment) => payment.invoiceNumber === invoice.invoiceNumber)).toHaveLength(3);
     const creditNoteRows = db
       .select()
       .from(creditNotes)
@@ -474,10 +478,101 @@ describe("phase 6 sales, dispatch, invoice, and collection workflows", () => {
     expect(delivered.status).toBe("delivered");
     expect(delivered.deliveredAt).toBeTruthy();
     expect(() => updateDispatchStatus(owner, finalDispatch.dispatchNumber, "cancelled")).toThrow(
-      /delivered dispatch cannot be cancelled/i,
+      /delivered dispatch cannot move to cancelled/i,
     );
 
     const finalCustomer = db.select().from(customers).where(eq(customers.id, customer.id)).get();
     expect(finalCustomer?.status).toBe("active");
+  });
+
+  it("reverses stock and fulfilment when a posted dispatch is cancelled", () => {
+    const owner = actorFor("owner@graintrace.local", "owner");
+    const productionActor = actorFor("production@graintrace.local", "production");
+    const id = suffix();
+    produceFinishedGoods(owner, productionActor, id);
+    const product = db
+      .select()
+      .from(products)
+      .where(and(eq(products.factoryId, owner.factoryId), eq(products.code, "PROD-500")))
+      .get();
+    if (!product) throw new Error("Seeded product is missing.");
+    const customer = createCustomer(owner, {
+      code: `CUST-CANCEL-${id}`,
+      name: `Cancellation Customer ${id}`,
+      customerType: "distributor",
+      state: "Karnataka",
+      deliveryState: "Karnataka",
+      city: "Bengaluru",
+      gstin: "29AACCS6543P1Z7",
+      creditTermsDays: 30,
+      creditLimitPaise: 1_000_000,
+    } as CustomerInput);
+    const orderNumber = `SO-CANCEL-${id}`;
+    const order = createSalesOrder(owner, {
+      orderNumber,
+      customerId: customer.id,
+      orderDate: "2026-04-01",
+      lines: [{ productId: product.id, quantityPackets: 4, unitPricePaise: 6000, discountPaise: 0 }],
+    } as SalesOrderInput);
+    updateSalesOrderStatus(owner, orderNumber, "submitted");
+    updateSalesOrderStatus(owner, orderNumber, "approved");
+    const balancesBefore = new Map(
+      db.select().from(finishedGoods).all().map((row) => [row.id, row.availableGrams] as const),
+    );
+
+    const dispatch = createDispatch(owner, {
+      salesOrderNumber: orderNumber,
+      dispatchedAt: "2026-04-02",
+      status: "in_transit",
+      lines: [{ salesOrderItemId: order.lines[0].id, quantityPackets: 2 }],
+    } as DispatchInput);
+    const dispatchedPacket = db
+      .select({ finishedGoodId: dispatchItems.finishedGoodPacketId })
+      .from(dispatchItems)
+      .where(eq(dispatchItems.dispatchId, dispatch.id))
+      .get();
+    if (!dispatchedPacket) throw new Error("Dispatch packet is missing.");
+    const packet = db
+      .select()
+      .from(finishedGoodPackets)
+      .where(eq(finishedGoodPackets.id, dispatchedPacket.finishedGoodId))
+      .get();
+    if (!packet) throw new Error("Dispatched packet is missing.");
+    const dispatchPacketIds = db
+      .select({ packetId: dispatchItems.finishedGoodPacketId })
+      .from(dispatchItems)
+      .where(eq(dispatchItems.dispatchId, dispatch.id))
+      .all()
+      .map((row) => row.packetId);
+    const affectedFinishedGoodId = packet.finishedGoodId;
+    const baseline = balancesBefore.get(affectedFinishedGoodId) ?? 0;
+    expect(getSalesOrderDetail(owner.factoryId, orderNumber)?.status).toBe("partially_fulfilled");
+    expect(
+      db.select().from(finishedGoods).where(eq(finishedGoods.id, affectedFinishedGoodId)).get()?.availableGrams,
+    ).toBe(baseline - 1000);
+
+    const cancelled = updateDispatchStatus(owner, dispatch.dispatchNumber, "cancelled");
+    expect(cancelled.status).toBe("cancelled");
+    expect(cancelled.deliveredAt).toBeNull();
+    expect(getSalesOrderDetail(owner.factoryId, orderNumber)?.status).toBe("approved");
+    expect(
+      db.select().from(finishedGoods).where(eq(finishedGoods.id, affectedFinishedGoodId)).get()?.availableGrams,
+    ).toBe(baseline);
+    const reversal = db
+      .select()
+      .from(stockLedger)
+      .where(and(eq(stockLedger.factoryId, owner.factoryId), eq(stockLedger.referenceType, "DISPATCH_CANCELLATION")))
+      .all()
+      .filter((entry) => entry.referenceId === dispatch.id);
+    expect(reversal).toHaveLength(1);
+    expect(reversal[0].quantityDelta).toBe(2);
+    const releasedPackets = db
+      .select()
+      .from(finishedGoodPackets)
+      .where(inArray(finishedGoodPackets.id, dispatchPacketIds))
+      .all();
+    expect(releasedPackets).toHaveLength(2);
+    expect(releasedPackets.every((packet) => packet.status === "available")).toBe(true);
+    expect(() => updateDispatchStatus(owner, dispatch.dispatchNumber, "delivered")).toThrow(/cannot move to delivered/i);
   });
 });

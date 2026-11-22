@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -23,6 +23,7 @@ import {
   createIdempotencyKey,
   getOfflineQueueSummary,
   listOfflineOrders,
+  markOfflineOrderFailed,
   queueOfflineOrder,
   removeOfflineOrder,
   saveOfflineOrder,
@@ -51,6 +52,7 @@ type Props = {
   initialOrders: SalesOrderSummary[];
   options: { customers: SalesOption[]; products: SalesOption[] };
   canManage: boolean;
+  focus?: string;
 };
 
 type Draft = {
@@ -138,7 +140,7 @@ function toDraft(record: OfflineOrderRecord): Draft {
   };
 }
 
-export function SalesmanMobileOrders({ initialOrders, options, canManage }: Props) {
+export function SalesmanMobileOrders({ initialOrders, options, canManage, focus }: Props) {
   const [orders, setOrders] = useState(initialOrders);
   const [referenceOptions, setReferenceOptions] = useState(options);
   const [draft, setDraft] = useState<Draft>(emptyDraft);
@@ -152,7 +154,10 @@ export function SalesmanMobileOrders({ initialOrders, options, canManage }: Prop
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [showAllQueue, setShowAllQueue] = useState(false);
+  const [showAllHistory, setShowAllHistory] = useState(false);
   const syncingRef = useRef(false);
+  const focusOpenedRef = useRef<string | null>(null);
   const synchronizeRef = useRef<() => Promise<OfflineSyncResult>>(async () => emptySyncResult);
 
   const activeCustomer = useMemo(
@@ -167,9 +172,9 @@ export function SalesmanMobileOrders({ initialOrders, options, canManage }: Prop
     const quantity = Math.max(0, Number(draft.quantity) || 0);
     return Math.max(0, parseAmount(draft.unitPrice) - parseAmount(draft.discount)) * quantity;
   }, [draft.discount, draft.quantity, draft.unitPrice]);
-  const editableOfflineOrders = offlineOrders.filter(
-    (record) => record.state === "draft" || record.state === "failed",
-  );
+  const editableOfflineOrders = offlineOrders.filter((record) => record.state === "draft");
+  const visibleOfflineOrders = showAllQueue ? offlineOrders : offlineOrders.slice(0, 8);
+  const visibleOrders = showAllHistory ? orders : orders.slice(0, 8);
 
   async function refreshOfflineState() {
     const [records, queueSummary] = await Promise.all([listOfflineOrders(), getOfflineQueueSummary()]);
@@ -214,6 +219,22 @@ export function SalesmanMobileOrders({ initialOrders, options, canManage }: Prop
 
   synchronizeRef.current = synchronize;
 
+  const openDetail = useCallback(async (orderNumber: string) => {
+    setBusy(true);
+    setError(null);
+    try {
+      const data = await salesApiRequest<{ detail: SalesOrderDetail }>(
+        `/api/sales/orders/${encodeURIComponent(orderNumber)}`,
+      );
+      setDetail(data.detail);
+      setDetailOpen(true);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "The order could not be loaded.");
+    } finally {
+      setBusy(false);
+    }
+  }, []);
+
   useEffect(() => {
     setOnline(navigator.onLine);
     void refreshOfflineState().catch(() => undefined);
@@ -236,6 +257,13 @@ export function SalesmanMobileOrders({ initialOrders, options, canManage }: Prop
       unsubscribe();
     };
   }, []);
+
+  useEffect(() => {
+    if (!focus || focusOpenedRef.current === focus || !navigator.onLine) return;
+    if (!orders.some((order) => order.orderNumber === focus)) return;
+    focusOpenedRef.current = focus;
+    void openDetail(focus);
+  }, [focus, orders, openDetail]);
 
   useEffect(() => {
     let mounted = true;
@@ -301,7 +329,7 @@ export function SalesmanMobileOrders({ initialOrders, options, canManage }: Prop
     setDraft(toDraft(record));
     setStep(0);
     setError(null);
-    setNotice(record.lastError ?? null);
+    setNotice(null);
   }
 
   async function saveDraft() {
@@ -421,17 +449,14 @@ export function SalesmanMobileOrders({ initialOrders, options, canManage }: Prop
     }
   }
 
-  async function openDetail(orderNumber: string) {
+  async function resetRecord(record: OfflineOrderRecord) {
     setBusy(true);
-    setError(null);
     try {
-      const data = await salesApiRequest<{ detail: SalesOrderDetail }>(
-        `/api/sales/orders/${encodeURIComponent(orderNumber)}`,
-      );
-      setDetail(data.detail);
-      setDetailOpen(true);
+      await markOfflineOrderFailed(record.id, "Synchronization was reset manually. Retry or remove this order.");
+      await refreshOfflineState();
+      setNotice(`${record.orderNumber} was reset and can be retried or removed.`);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "The order could not be loaded.");
+      setError(caught instanceof Error ? caught.message : "The local record could not be reset.");
     } finally {
       setBusy(false);
     }
@@ -485,13 +510,19 @@ export function SalesmanMobileOrders({ initialOrders, options, canManage }: Prop
       </header>
 
       <div className="space-y-5 px-5 pt-5">
-        {error ? <p className="border-l-2 border-rust bg-rust/10 px-3 py-2 text-sm text-rust">{error}</p> : null}
+        {error ? (
+          <p role="alert" className="border-l-2 border-rust bg-rust/10 px-3 py-2 text-sm text-rust">
+            {error}
+          </p>
+        ) : null}
         {notice ? (
-          <p className="border-l-2 border-signal bg-signal/15 px-3 py-2 text-sm text-forest">{notice}</p>
+          <p role="status" aria-live="polite" className="border-l-2 border-signal bg-signal/15 px-3 py-2 text-sm text-forest">
+            {notice}
+          </p>
         ) : null}
 
         {!online ? (
-          <div className="flex items-start gap-3 border border-rust/30 bg-rust/10 p-4 text-sm text-rust">
+          <div role="status" aria-live="polite" className="flex items-start gap-3 border border-rust/30 bg-rust/10 p-4 text-sm text-rust">
             <WifiOff className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
             <p>
               You are offline. Orders saved here stay on this device with a unique key and sync in order
@@ -514,7 +545,7 @@ export function SalesmanMobileOrders({ initialOrders, options, canManage }: Prop
                 No orders saved on this device yet.
               </p>
             ) : (
-              offlineOrders.slice(0, 8).map((record) => (
+              visibleOfflineOrders.map((record) => (
                 <div key={record.id} className="min-w-0 border border-obsidian/15 bg-white/50 p-4">
                   <div className="flex min-w-0 flex-wrap items-start justify-between gap-3">
                     <div className="min-w-0">
@@ -546,7 +577,12 @@ export function SalesmanMobileOrders({ initialOrders, options, canManage }: Prop
                         <RefreshCw className="h-3.5 w-3.5" /> Retry
                       </Button>
                     ) : null}
-                    {record.state === "synced" ? (
+                    {record.state === "syncing" ? (
+                      <Button variant="outline" size="sm" onClick={() => void resetRecord(record)} disabled={busy}>
+                        Reset
+                      </Button>
+                    ) : null}
+                    {record.state !== "syncing" ? (
                       <Button variant="ghost" size="sm" onClick={() => void removeRecord(record)} disabled={busy}>
                         Remove
                       </Button>
@@ -556,6 +592,11 @@ export function SalesmanMobileOrders({ initialOrders, options, canManage }: Prop
               ))
             )}
           </div>
+          {offlineOrders.length > 8 ? (
+            <Button variant="ghost" size="sm" className="mt-4" onClick={() => setShowAllQueue((value) => !value)}>
+              {showAllQueue ? "Show recent 8" : `Show all ${offlineOrders.length}`}
+            </Button>
+          ) : null}
         </section>
 
         <section aria-label="New order" className="border border-obsidian/15 bg-paper p-5">
@@ -747,7 +788,7 @@ export function SalesmanMobileOrders({ initialOrders, options, canManage }: Prop
                 No synchronized orders yet. Queue one locally to start.
               </p>
             ) : (
-              orders.slice(0, 8).map((order) => (
+              visibleOrders.map((order) => (
                 <button
                   key={order.id}
                   type="button"
@@ -766,6 +807,11 @@ export function SalesmanMobileOrders({ initialOrders, options, canManage }: Prop
               ))
             )}
           </div>
+          {orders.length > 8 ? (
+            <Button variant="ghost" size="sm" className="mt-4" onClick={() => setShowAllHistory((value) => !value)}>
+              {showAllHistory ? "Show recent 8" : `Show all ${orders.length}`}
+            </Button>
+          ) : null}
         </section>
       </div>
 

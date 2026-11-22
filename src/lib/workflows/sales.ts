@@ -1,5 +1,5 @@
 import "server-only";
-import { and, asc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, like, or, sql } from "drizzle-orm";
 import { assertUniqueIds, multiplyPaiseByInteger, subtractPaise } from "@/domain";
 import { getDb } from "@/lib/db";
 import { customers, products, salesOrderItems, salesOrders, users } from "@/lib/db/schema";
@@ -102,6 +102,21 @@ export function listSalesOrders(
   factoryId: number,
   filters: { status?: string; query?: string } = {},
 ): SalesOrderSummary[] {
+  const conditions = [eq(salesOrders.factoryId, factoryId)];
+  if (filters.status && filters.status !== "all") {
+    conditions.push(eq(salesOrders.status, filters.status));
+  }
+  const needle = filters.query?.trim();
+  if (needle) {
+    const pattern = `%${needle}%`;
+    conditions.push(
+      or(
+        like(salesOrders.orderNumber, pattern),
+        like(customers.name, pattern),
+        like(salesOrders.status, pattern),
+      )!,
+    );
+  }
   return getDb()
     .select({
       id: salesOrders.id,
@@ -114,15 +129,10 @@ export function listSalesOrders(
     })
     .from(salesOrders)
     .innerJoin(customers, eq(salesOrders.customerId, customers.id))
-    .where(eq(salesOrders.factoryId, factoryId))
+    .where(and(...conditions))
     .orderBy(sql`${salesOrders.orderDate} desc`, sql`${salesOrders.id} desc`)
-    .all()
-    .filter((row) => {
-      if (filters.status && filters.status !== "all" && row.status !== filters.status) return false;
-      const needle = filters.query?.trim().toLowerCase();
-      if (!needle) return true;
-      return `${row.orderNumber} ${row.customerName} ${row.status}`.toLowerCase().includes(needle);
-    });
+    .limit(200)
+    .all();
 }
 
 export function getSalesOrderDetail(factoryId: number, orderNumber: string): SalesOrderDetail | null {

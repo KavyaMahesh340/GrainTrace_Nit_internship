@@ -4,7 +4,7 @@
 
 Source of truth: `docs/PROBLEM.md`. The original file was absent from the workspace; the supplied brief was preserved there and used verbatim.
 
-GRAINTRACE is a manufacturing intelligence system for small food manufacturers. Phase 1 delivered the foundation, design system, application shell, factory overview, and honest route structure. Phase 2 delivered the normalized database, authentication, expiring sessions, and server-enforced role permissions. Phase 3 delivered the pure domain engine and deterministic benchmark. Phase 4 delivered live purchasing and inventory workflow services, APIs, and UI screens. Phase 5 delivered live production execution and Batch DNA traceability. Phase 6 delivered sales orders, approval control, dispatch, GST invoices, credit notes, collections, a salesman mobile console, and live order tracking. Phase 7 delivered audited payment corrections, a collections dashboard, ten financial and operational reports, CSV/Excel/PDF exports, and a live audit explorer with source-to-transaction trails. Phase 8 adds an installable PWA, durable offline order drafts and queueing, idempotent server synchronization, sync-state visibility, and mobile offline operations. Recipes and finished-goods route shells remain intentionally unimplemented.
+GRAINTRACE is a manufacturing intelligence system for small food manufacturers. Phase 1 delivered the foundation, design system, application shell, factory overview, and honest route structure. Phase 2 delivered the normalized database, authentication, expiring sessions, and server-enforced role permissions. Phase 3 delivered the pure domain engine and deterministic benchmark. Phase 4 delivered live purchasing and inventory workflow services, APIs, and UI screens. Phase 5 delivered live production execution and Batch DNA traceability. Phase 6 delivered sales orders, approval control, dispatch, GST invoices, credit notes, collections, a salesman mobile console, and live order tracking. Phase 7 delivered audited payment corrections, a collections dashboard, ten financial and operational reports, CSV/Excel/PDF exports, and a live audit explorer with source-to-transaction trails. Phase 8 adds an installable PWA, durable offline order drafts and queueing, idempotent server synchronization, sync-state visibility, and mobile offline operations. Phase 9 adds a strict final audit, defect fixes, ledger-authoritative balances, clean benchmark evidence, final documentation, and Docker configuration. Recipes and finished-goods route shells remain intentionally unimplemented.
 
 A requirement is marked **explicit** when stated in the brief and **implied** when directly named by the material-journey chain but lacking detail. Implied items are recorded for planning only and are not implemented or expanded with invented rules.
 
@@ -339,3 +339,21 @@ The Phase 8 brief supplied in conversation is the active source for this section
 | P8-FR-12 | Preserve Phase 1–7 behavior and benchmark results, then verify and commit Phase 8. | Implemented |
 
 Offline support is limited to optimized salesman order entry. Other workflows remain server-connected by design.
+
+## Phase 9 requirements
+
+The Phase 9 brief required a final strict engineering audit before the final checkpoint.
+
+| ID | Requirement | Status |
+| --- | --- | --- |
+| P9-FR-01 | Audit finance arithmetic, inventory ledger integrity, workflow transitions, authorization, API validation, offline recovery, PWA behavior, responsive checks, setup evidence, and documentation accuracy. | Implemented |
+| P9-FR-02 | Make the stock ledger authoritative for cached balances and prevent duplicate movement postings. | Implemented |
+| P9-FR-03 | Reverse stock, packets, fulfilment, and cash correctly on dispatch and invoice cancellation. | Implemented |
+| P9-FR-04 | Fix report sign, revenue basis, margin, product filter, and partial-payment status defects. | Implemented |
+| P9-FR-05 | Validate API request bodies and map validation errors consistently while preserving server authorization. | Implemented |
+| P9-FR-06 | Recover stale offline sync states and make legacy queue upgrades idempotent. | Implemented |
+| P9-FR-07 | Add regression tests for all material audit fixes. | Implemented |
+| P9-FR-08 | Produce `docs/FINAL_AUDIT.md`, `docs/BENCHMARK_RESULTS.md`, accurate README facts, and Docker configuration. | Implemented |
+| P9-FR-09 | Run clean migration/seed, benchmark, typecheck, lint, tests, build, and responsive checks, then commit Phase 9. | Implemented |
+
+Docker configuration was authored but not built or run locally because the Docker CLI is unavailable; this limitation is recorded in `docs/FINAL_AUDIT.md`.

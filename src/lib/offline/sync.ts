@@ -5,6 +5,7 @@ import {
   markOfflineOrderFailed,
   markOfflineOrderSynced,
   markOfflineOrderSyncing,
+  resetStaleSyncingOrders,
   setLastSuccessfulSync,
   type OfflineOrderRecord,
 } from "./queue";
@@ -49,14 +50,25 @@ function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : "The order could not be synchronized.";
 }
 
+async function fetchWithTimeout(fetcher: typeof fetch, input: string, init: RequestInit) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 15_000);
+  try {
+    return await fetcher(input, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export async function syncQueuedOrders(fetcher: typeof fetch = fetch): Promise<OfflineSyncResult> {
+  await resetStaleSyncingOrders();
   const records = (await listOfflineOrders()).filter((record) => record.state === "queued");
   const result: OfflineSyncResult = { attempted: records.length, synced: 0, replayed: 0, failed: 0, errors: [] };
 
   for (const record of records) {
     try {
       await markOfflineOrderSyncing(record.id);
-      const response = await fetcher("/api/sales/sync", {
+      const response = await fetchWithTimeout(fetcher, "/api/sales/sync", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(buildSyncBody(record)),
@@ -77,7 +89,7 @@ export async function syncQueuedOrders(fetcher: typeof fetch = fetch): Promise<O
     }
   }
 
-  if (result.attempted > 0 && result.failed === 0) {
+  if (result.synced > 0) {
     await setLastSuccessfulSync(new Date().toISOString());
   }
   return result;

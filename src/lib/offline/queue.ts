@@ -186,11 +186,19 @@ function openDatabase(): Promise<IDBDatabase> {
       const db = request.result;
       const transaction = request.transaction;
       const versionChange = event as IDBVersionChangeEvent;
-      if (!db.objectStoreNames.contains(MUTATION_STORE)) {
-        const store = db.createObjectStore(MUTATION_STORE, { keyPath: "id" });
-        store.createIndex("idempotencyKey", "idempotencyKey", { unique: true });
-        store.createIndex("state", "state");
-        store.createIndex("createdAt", "createdAt");
+      const mutationStore = db.objectStoreNames.contains(MUTATION_STORE)
+        ? transaction?.objectStore(MUTATION_STORE)
+        : db.createObjectStore(MUTATION_STORE, { keyPath: "id" });
+      if (mutationStore) {
+        if (!mutationStore.indexNames.contains("idempotencyKey")) {
+          mutationStore.createIndex("idempotencyKey", "idempotencyKey", { unique: true });
+        }
+        if (!mutationStore.indexNames.contains("state")) {
+          mutationStore.createIndex("state", "state");
+        }
+        if (!mutationStore.indexNames.contains("createdAt")) {
+          mutationStore.createIndex("createdAt", "createdAt");
+        }
       }
       if (!db.objectStoreNames.contains(SETTINGS_STORE)) {
         db.createObjectStore(SETTINGS_STORE);
@@ -353,6 +361,25 @@ export async function markOfflineOrderSynced(id: string, serverOrderId: number |
     lastError: null,
     updatedAt: new Date().toISOString(),
   });
+}
+
+export async function resetStaleSyncingOrders(thresholdMs = 120_000): Promise<number> {
+  const records = await listOfflineOrders();
+  const cutoff = Date.now() - thresholdMs;
+  let reset = 0;
+  for (const record of records) {
+    if (record.state !== "syncing") continue;
+    const attemptedAt = record.lastAttemptAt ? Date.parse(record.lastAttemptAt) : Number.NaN;
+    if (!Number.isNaN(attemptedAt) && attemptedAt > cutoff) continue;
+    await putOfflineOrder({
+      ...record,
+      state: "failed",
+      lastError: "Synchronization was interrupted. Retry this order when ready.",
+      updatedAt: new Date().toISOString(),
+    });
+    reset += 1;
+  }
+  return reset;
 }
 
 export async function removeOfflineOrder(id: string): Promise<void> {

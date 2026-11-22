@@ -2,6 +2,7 @@ import { createElement } from "react";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { and, eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
+import { z } from "zod";
 import { ReportPdfDocument } from "@/lib/exports/report-pdf-document";
 import { reportToCsv, reportToXlsx } from "@/lib/exports/report-export";
 import { permissionsFor, type RoleName } from "@/lib/auth/permissions";
@@ -14,6 +15,7 @@ import {
   salesOrders,
   users,
 } from "@/lib/db/schema";
+import { apiErrorResponse } from "@/lib/workflows/api";
 import type { WorkflowActor } from "@/lib/workflows/context";
 import { getAuditorTrail, listAuditEntries } from "@/lib/workflows/audit-explorer";
 import {
@@ -132,7 +134,14 @@ function financeFixture() {
     })
     .run();
 
-  return { owner, accountant, invoiceNumber, customerName: customerResult.name };
+  return {
+    owner,
+    accountant,
+    invoiceNumber,
+    customerId: customerResult.id,
+    customerName: customerResult.name,
+    productName: product.name,
+  };
 }
 
 describe("phase 7 finance, reports, and audit", () => {
@@ -240,6 +249,80 @@ describe("phase 7 finance, reports, and audit", () => {
       }),
     );
     expect(pdf.byteLength).toBeGreaterThan(1000);
+  });
+
+  it("marks partially corrected receipts without treating them as fully corrected", () => {
+    const { accountant, invoiceNumber } = financeFixture();
+    const payment = createPayment(accountant, {
+      invoiceNumber,
+      paidAt: "2026-03-05T00:00:00.000Z",
+      amountPaise: 400_000,
+      method: "upi",
+      referenceNo: `FIN-PARTIAL-${suffix()}`,
+      notes: "",
+    });
+    correctPayment(accountant, {
+      paymentNumber: payment.paymentNumber,
+      correctedAt: "2026-03-06T00:00:00.000Z",
+      amountPaise: 50_000,
+      reason: "UPI settlement was short.",
+    });
+
+    const record = listPayments(accountant.factoryId).find(
+      (row) => row.paymentNumber === payment.paymentNumber,
+    );
+    expect(record?.status).toBe("partially_corrected");
+    const audit = db
+      .select()
+      .from(auditLog)
+      .where(and(eq(auditLog.factoryId, accountant.factoryId), eq(auditLog.action, "PAYMENT_CORRECTED")))
+      .all()
+      .filter((entry) => JSON.stringify(entry.metadataJson).includes(invoiceNumber));
+    expect(JSON.parse(String(audit.at(-1)?.afterJson))).toMatchObject({
+      paymentStatus: "partially_corrected",
+    });
+  });
+
+  it("reports customer balances as debits and receipts as credits", () => {
+    const { accountant, invoiceNumber, customerId } = financeFixture();
+    const referenceNo = `FIN-LEDGER-${suffix()}`;
+    createPayment(accountant, {
+      invoiceNumber,
+      paidAt: "2026-03-05T00:00:00.000Z",
+      amountPaise: 100_000,
+      method: "bank_transfer",
+      referenceNo,
+      notes: "",
+    });
+    const ledger = getReport(accountant.factoryId, "customer_ledger", {
+      dateFrom: "2026-03-01",
+      dateTo: "2026-03-31",
+      customerId,
+    });
+    const invoiceRow = ledger.rows.find((row) => row.document === invoiceNumber);
+    const receiptRow = ledger.rows.find((row) => row.creditPaise === 100_000);
+    expect(invoiceRow).toMatchObject({ debitPaise: 787_500, creditPaise: 0 });
+    expect(receiptRow).toMatchObject({ debitPaise: 0, creditPaise: 100_000 });
+  });
+
+  it("bases product profitability revenue on taxable value", () => {
+    const { accountant, customerId, productName } = financeFixture();
+    const report = getReport(accountant.factoryId, "product_profitability", {
+      dateFrom: "2026-03-01",
+      dateTo: "2026-03-31",
+      customerId,
+    });
+    const row = report.rows.find((item) => item.product === productName);
+    expect(row?.revenuePaise).toBe(750_000);
+    expect(row?.taxPaise).toBe(37_500);
+  });
+
+  it("maps request validation failures to structured 400 responses", () => {
+    const parsed = z.object({ amountPaise: z.number().int().positive() }).safeParse({ amountPaise: -1 });
+    expect(parsed.success).toBe(false);
+    if (parsed.success) return;
+    const response = apiErrorResponse(parsed.error);
+    expect(response.status).toBe(400);
   });
 
   it("exposes audit search and an invoice source-to-transaction trail", () => {

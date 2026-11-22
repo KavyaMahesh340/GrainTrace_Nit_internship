@@ -58,7 +58,7 @@ export function OrdersWorkspace({
   focus,
 }: Props) {
   if (isSalesman) {
-    return <SalesmanMobileOrders initialOrders={initialOrders} options={options} canManage={canManage} />;
+    return <SalesmanMobileOrders initialOrders={initialOrders} options={options} canManage={canManage} focus={focus} />;
   }
   return (
     <DesktopOrders
@@ -122,10 +122,10 @@ function DesktopOrders({
   }, [orders, query, status]);
 
   useEffect(() => {
-    if (!focus) return;
+    if (!focus || !orders.some((order) => order.orderNumber === focus)) return;
     void openDetail(focus);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [focus]);
+  }, [focus, orders]);
 
   async function refresh() {
     try {

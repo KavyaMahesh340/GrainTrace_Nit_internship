@@ -15,6 +15,7 @@ import {
   users,
 } from "@/lib/db/schema";
 import { WorkflowAuthorizationError, type WorkflowActor } from "@/lib/workflows/context";
+import { getReport } from "@/lib/workflows/reports";
 import { getBatchTrace, listBatchDnaRuns } from "@/lib/workflows/batch-dna";
 import {
   completeProductionRun,
@@ -243,6 +244,20 @@ describe("phase 5 production and batch dna workflows", () => {
     });
     expect(posted.status).toBe("posted");
     expect(posted.snapshot.costPerGoodPacketPaise).toBeGreaterThan(0);
+
+    const product = getProductionOptions(owner.factoryId).products.find((item) => item.code === "PROD-500");
+    if (!product) throw new Error("Seeded product option is missing.");
+    const reportFilters = { dateFrom: "2026-03-01", dateTo: "2026-03-31" };
+    const unfilteredCosts = getReport(owner.factoryId, "production_cost_variance", reportFilters);
+    expect(unfilteredCosts.rows.some((row) => row.run === runNumber)).toBe(true);
+    const filteredCosts = getReport(owner.factoryId, "production_cost_variance", {
+      ...reportFilters,
+      productId: product.id,
+    });
+    expect(filteredCosts.rows.some((row) => row.run === runNumber)).toBe(true);
+    expect(
+      getReport(owner.factoryId, "production_cost_variance", { ...reportFilters, productId: 999_999 }).rows,
+    ).toHaveLength(0);
 
     const runRow = db
       .select()

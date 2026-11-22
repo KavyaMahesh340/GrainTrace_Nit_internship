@@ -26,9 +26,10 @@ import {
 } from "@/lib/db/schema";
 import { requireActorPermission, type WorkflowActor } from "./context";
 import type { WorkflowDb, WorkflowTransaction } from "./db";
+import { stockItemKey } from "./db";
+import { loadStockLedger, loadStockLedgerGroups, postLedgerEntry } from "./ledger";
 import { recordAudit } from "./audit";
 import { WorkflowError } from "./errors";
-import { postLedgerEntry, loadStockLedger } from "./ledger";
 import { inventoryAdjustmentInputSchema, type InventoryAdjustmentInput } from "./validation";
 
 export type InventoryCategory = "raw" | "packaging" | "finished_good";
@@ -298,9 +299,9 @@ function rawInventory(factoryId: number): InventoryRow[] {
 
   return materials.map((material) => {
     const materialBatchesForItem = batches.filter((batch) => batch.rawMaterialId === material.id);
-    const ledger = materialBatchesForItem.flatMap((batch) =>
-      loadStockLedger(db, factoryId, { type: "raw", id: batch.id }),
-    );
+    const targets = materialBatchesForItem.map((batch) => ({ type: "raw" as const, id: batch.id }));
+    const ledgerMap = loadStockLedgerGroups(db, factoryId, targets);
+    const ledger = targets.flatMap((target) => ledgerMap.get(stockItemKey(target)) ?? []);
     return buildRow({
       category: "raw",
       itemId: material.id,
@@ -323,9 +324,9 @@ function packagingInventory(factoryId: number): InventoryRow[] {
 
   return materials.map((material) => {
     const materialBatchesForItem = batches.filter((batch) => batch.packagingMaterialId === material.id);
-    const ledger = materialBatchesForItem.flatMap((batch) =>
-      loadStockLedger(db, factoryId, { type: "packaging", id: batch.id }),
-    );
+    const targets = materialBatchesForItem.map((batch) => ({ type: "packaging" as const, id: batch.id }));
+    const ledgerMap = loadStockLedgerGroups(db, factoryId, targets);
+    const ledger = targets.flatMap((target) => ledgerMap.get(stockItemKey(target)) ?? []);
     return buildRow({
       category: "packaging",
       itemId: material.id,
@@ -358,8 +359,11 @@ function finishedInventory(factoryId: number): InventoryRow[] {
     .where(eq(finishedGoods.factoryId, factoryId))
     .all();
 
+  const targets = rows.map((row) => ({ type: "finished_good" as const, id: row.id }));
+  const ledgerMap = loadStockLedgerGroups(db, factoryId, targets);
   return rows.map((row) => {
-    const ledger = loadStockLedger(db, factoryId, { type: "finished_good", id: row.id });
+    const target = { type: "finished_good" as const, id: row.id };
+    const ledger = ledgerMap.get(stockItemKey(target)) ?? [];
     return buildRow({
       category: "finished_good",
       itemId: row.id,

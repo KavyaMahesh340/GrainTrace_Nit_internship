@@ -4,7 +4,7 @@
 
 GRAINTRACE is a material-journey accountability system. The architecture must make quantity and transaction provenance easy to trace from salesman order through audit, while the interface presents that provenance as an operational surface rather than a generic dashboard.
 
-Phase 1 established the runtime, design tokens, route topology, data workflow, and honest preview experience. Phase 2 added the normalized database, authentication, expiring sessions, and server-enforced role permissions. Phase 4 added live purchasing and inventory workflows. Phase 5 added production execution and Batch DNA traceability. Phase 6 added sales orders, approval control, dispatch, GST invoices, credit notes, collections, and mobile order entry built on the Phase 3 pure domain engine. Phase 7 added signed payment corrections, collections analytics, ten live reports, CSV/Excel/PDF exports, and audit exploration. Phase 8 adds an installable PWA, durable offline order queueing, and idempotent synchronization; recipes and finished goods remain unimplemented.
+Phase 1 established the runtime, design tokens, route topology, data workflow, and honest preview experience. Phase 2 added the normalized database, authentication, expiring sessions, and server-enforced role permissions. Phase 4 added live purchasing and inventory workflows. Phase 5 added production execution and Batch DNA traceability. Phase 6 added sales orders, approval control, dispatch, GST invoices, credit notes, collections, and mobile order entry built on the Phase 3 pure domain engine. Phase 7 added signed payment corrections, collections analytics, ten live reports, CSV/Excel/PDF exports, and audit exploration. Phase 8 adds an installable PWA, durable offline order queueing, and idempotent synchronization. Phase 9 adds a strict final audit, ledger-authoritative balance posting, cancellation reversals, corrected finance reports, recoverable offline states, Docker configuration, and final benchmark evidence; recipes and finished goods remain unimplemented.
 
 ## Stack decisions
 
@@ -174,7 +174,7 @@ Overview links preserve real and preview references in query strings (for exampl
 
 ## Database design
 
-The schema grew from thirty-one Phase 2 tables to the Phase 8 commercial, accountability, and offline-sync model. Every transactional and master-data table is scoped by `factory_id`, has timestamp columns, and uses foreign keys for referential integrity. Money is stored as integer paise in `*_paise` columns. Physical quantities are stored as integer base units, primarily grams in `*_grams` columns, with packet counts in `quantity_packets` and packaging counts in `quantity_units`. Phase 7 added signed payment direction, correction links, duplicate-key uniqueness, product category, and richer audit evidence. Phase 8 adds a nullable, factory-scoped unique idempotency key on sales orders without replacing existing records.
+The schema grew from thirty-one Phase 2 tables to the Phase 9 commercial, accountability, and offline-sync model with thirty-eight tables. Every transactional and master-data table is scoped by `factory_id`, has timestamp columns, and uses foreign keys for referential integrity. Money is stored as integer paise in `*_paise` columns. Physical quantities are stored as integer base units, primarily grams in `*_grams` columns, with packet counts in `quantity_packets` and packaging counts in `quantity_units`. Phase 7 added signed payment direction, correction links, duplicate-key uniqueness, product category, and richer audit evidence. Phase 8 adds a nullable, factory-scoped unique idempotency key on sales orders without replacing existing records. Phase 9 adds a factory-scoped deterministic `movement_key` on stock ledger rows and extends payment status values to include `partially_corrected`.
 
 Table groups:
 
@@ -336,7 +336,8 @@ Browser responsive and console-error checks are automated by `scripts/responsive
 
 - Authentication and authorization are implemented, but no user-management screen exists; `users:manage` is enforced only at the route layer.
 - Recipes and finished goods remain explicitly labeled route shells rather than repository-backed workflow screens; audit is a live repository-backed explorer as of Phase 7.
-- Purchases, production, inventory adjustments, and dispatch write the stock ledger; dispatch consumes whole finished-good packets in `pieces` and decrements `availableGrams` by each packet's gram weight.
+- All stock postings flow through `src/lib/workflows/ledger.ts`, which derives balances from the append-only ledger and is the sole writer of cached available balances; purchases, production, inventory adjustments, dispatch, and cancellation reversals all use this path.
+- Dispatch consumes whole finished-good packets in `pieces`; cancellation appends a compensating ledger row and restores packets, fulfilled quantity, and order status atomically.
 - Offline queue support is scoped to salesman order entry; other workflows require a live server.
 - The service worker caches static assets only and does not intercept or cache API responses; synchronization is driven by the authenticated application client.
 - Report definitions are fixed in code for the supplied Phase 7 catalog; adding arbitrary user-defined reports remains outside scope.

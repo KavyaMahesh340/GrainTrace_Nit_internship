@@ -2,7 +2,7 @@ import { and, eq } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { permissionsFor, type RoleName } from "@/lib/auth/permissions";
 import { customers, products, salesOrders, users } from "@/lib/db/schema";
-import { deleteOfflineDatabase, getOfflineOrder, saveOfflineOrder } from "@/lib/offline/queue";
+import { deleteOfflineDatabase, getOfflineOrder, getOfflineQueueSummary, saveOfflineOrder } from "@/lib/offline/queue";
 import { syncQueuedOrders } from "@/lib/offline/sync";
 import type { WorkflowActor } from "@/lib/workflows/context";
 import { syncSalesOrder } from "@/lib/workflows/sales";
@@ -172,5 +172,39 @@ describe("offline order synchronization", () => {
     expect(result.errors[0]).toContain("Permission denied");
     expect(failed?.state).toBe("failed");
     expect(failed?.lastError).toBe("Permission denied");
+  });
+
+  it("records a successful sync timestamp even when another order fails", async () => {
+    const owner = actorFor("owner@graintrace.local", "owner");
+    const { customerId, productId } = seededIds(owner);
+    const id = suffix();
+    for (const index of [1, 2]) {
+      await saveOfflineOrder(
+        {
+          orderNumber: `SO-PARTIAL-${index}-${id}`,
+          customerId: String(customerId),
+          productId: String(productId),
+          quantityPackets: "1",
+          unitPrice: "150.00",
+          orderDate: "2026-11-22",
+        },
+        { state: "queued" },
+      );
+    }
+    let calls = 0;
+    const fetcher = (async () => {
+      calls += 1;
+      if (calls === 1) {
+        return { ok: true, status: 201, json: async () => ({ ok: true, result: { order: { id: 9002 } } }) } as Response;
+      }
+      return { ok: false, status: 409, json: async () => ({ ok: false, error: "Conflict" }) } as Response;
+    }) as typeof fetch;
+
+    const result = await syncQueuedOrders(fetcher);
+    const summary = await getOfflineQueueSummary();
+
+    expect(result.synced).toBe(1);
+    expect(result.failed).toBe(1);
+    expect(summary.lastSuccessfulSync).toBeTruthy();
   });
 });

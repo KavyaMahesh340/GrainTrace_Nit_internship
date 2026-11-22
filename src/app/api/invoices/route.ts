@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { apiErrorResponse, readApiJson, requireApiActor } from "@/lib/workflows/api";
 import { createInvoice, listInvoices } from "@/lib/workflows/invoices";
-import type { InvoiceInput } from "@/lib/workflows/validation";
+import { invoiceInputSchema } from "@/lib/workflows/validation";
 
 export const runtime = "nodejs";
 
@@ -24,7 +24,7 @@ export async function POST(request: Request) {
   const body = await readApiJson(request);
   if (body instanceof NextResponse) return body;
   try {
-    const invoice = createInvoice(actor, body as InvoiceInput);
+    const invoice = createInvoice(actor, invoiceInputSchema.parse(body));
     return NextResponse.json({ ok: true, invoice }, { status: 201 });
   } catch (error) {
     return apiErrorResponse(error);

@@ -49,11 +49,6 @@ const pwaAssets = [
   "/icons/icon-512.png",
 ];
 
-const expectedLookupMisses = [
-  "/api/sales/orders/SO-2481",
-  "/api/production/runs/EX-0142",
-];
-
 const failures = [];
 const browser = await puppeteer.launch({
   executablePath,
@@ -98,25 +93,6 @@ async function signIn(email, password) {
   };
 }
 
-async function overflowMetrics(page) {
-  return page.evaluate(() => ({
-    scrollWidth: document.documentElement.scrollWidth,
-    clientWidth: document.documentElement.clientWidth,
-    uncontained: Array.from(document.querySelectorAll("main *"))
-      .filter((element) => {
-        const style = getComputedStyle(element);
-        return style.overflowX === "visible" && element.scrollWidth > element.clientWidth + 1;
-      })
-      .slice(0, 12)
-      .map((element) => ({
-        tag: element.tagName,
-        className: String(element.className ?? "").slice(0, 120),
-        scrollWidth: element.scrollWidth,
-        clientWidth: element.clientWidth,
-      })),
-  }));
-}
-
 try {
   const sessionCookie = await signIn("owner@graintrace.local", "Owner!2026");
 
@@ -132,8 +108,10 @@ try {
       scrollWidth: document.documentElement.scrollWidth,
       clientWidth: document.documentElement.clientWidth,
       heading: document.querySelector("h1")?.textContent?.trim() ?? "",
-      mobileTriggerVisible:
-        getComputedStyle(document.querySelector('[aria-label="Open navigation"]')).display !== "none",
+      mobileTriggerVisible: (() => {
+        const trigger = document.querySelector('[aria-label="Open navigation"]');
+        return trigger ? getComputedStyle(trigger).display !== "none" : false;
+      })(),
       overflowing: Array.from(document.querySelectorAll("*"))
         .filter((element) => element.getBoundingClientRect().right > document.documentElement.clientWidth + 1)
         .slice(0, 12)
@@ -240,6 +218,48 @@ try {
     await page.close();
   }
 
+  for (const viewport of viewports) {
+    const page = await browser.newPage();
+    const errors = [];
+    watchConsole(page, `offline-${viewport.label}`, errors);
+    await page.setViewport({ width: viewport.width, height: viewport.height });
+    await page.goto(`${baseUrl}/offline`, { waitUntil: "networkidle0", timeout: 30000 });
+    const metrics = await page.evaluate(async () => {
+      const assets = await Promise.all(
+        ["/manifest.webmanifest", "/sw.js", "/icons/icon-192.png", "/icons/icon-512.png"].map(async (path) => {
+          const response = await fetch(path);
+          return { path, ok: response.ok };
+        }),
+      );
+      return {
+        heading: document.querySelector("h1")?.textContent?.trim() ?? "",
+        text: document.body.textContent ?? "",
+        scrollWidth: document.documentElement.scrollWidth,
+        clientWidth: document.documentElement.clientWidth,
+        assets,
+      };
+    });
+    if (!metrics.heading.includes("You are offline")) {
+      failures.push(`offline-${viewport.label}: fallback heading missing`);
+    }
+    if (!metrics.text.includes("LOCAL QUEUE")) {
+      failures.push(`offline-${viewport.label}: local queue panel missing`);
+    }
+    if (metrics.scrollWidth > metrics.clientWidth + 1) {
+      failures.push(
+        `offline-${viewport.label}: fallback overflows horizontally (${metrics.scrollWidth} > ${metrics.clientWidth})`,
+      );
+    }
+    for (const asset of metrics.assets) {
+      if (!asset.ok) failures.push(`offline-${viewport.label}: PWA asset ${asset.path} unavailable`);
+    }
+    if (screenshotDir) {
+      await page.screenshot({ path: join(screenshotDir, `offline-${viewport.width}.png`), fullPage: true });
+    }
+    failures.push(...errors);
+    await page.close();
+  }
+
   const routePage = await browser.newPage();
   await routePage.setCookie(sessionCookie);
   const routeErrors = [];
@@ -250,7 +270,7 @@ try {
       return;
     }
     const location = message.location();
-    if (message.text().includes("404") && (allowExpected404 || expectedLookupMisses.some((path) => location.url?.includes(path)))) {
+    if (message.text().includes("404") && allowExpected404) {
       return;
     }
     routeErrors.push(`routes ${currentRoute}: ${message.text()} ${location.url ?? ""}`);

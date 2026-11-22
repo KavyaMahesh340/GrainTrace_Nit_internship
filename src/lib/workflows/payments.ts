@@ -392,6 +392,10 @@ export function correctPayment(actor: WorkflowActor, input: PaymentCorrectionInp
       payablePaise(invoice),
     );
     const amountPaidPaise = calculateAmountPaid(nextRecords);
+    const correctedPaise = nextRecords
+      .filter((record) => String(record.correctsPaymentId ?? "") === String(original.id))
+      .reduce((total, record) => total + record.amountPaise, 0);
+    const originalStatus = correctedPaise >= original.amountPaise ? "corrected" : "partially_corrected";
     const now = new Date().toISOString();
     const result = tx
       .insert(payments)
@@ -417,7 +421,7 @@ export function correctPayment(actor: WorkflowActor, input: PaymentCorrectionInp
     const status = statusFor(invoice, nextRecords);
 
     tx.update(payments)
-      .set({ status: "corrected", updatedAt: now })
+      .set({ status: originalStatus, updatedAt: now })
       .where(eq(payments.id, original.id))
       .run();
     tx.update(invoices)
@@ -444,7 +448,7 @@ export function correctPayment(actor: WorkflowActor, input: PaymentCorrectionInp
           amountPaidPaise: invoice.amountPaidPaise,
           invoiceStatus: invoice.status,
         },
-        after: { paymentStatus: "corrected", amountPaidPaise, invoiceStatus: status },
+        after: { paymentStatus: originalStatus, amountPaidPaise, invoiceStatus: status },
       },
     );
 

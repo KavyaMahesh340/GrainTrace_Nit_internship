@@ -437,9 +437,17 @@ function inventoryValuation(factoryId: number, filters: ReportFilters): ReportDe
 
 function productionCostVariance(factoryId: number, filters: ReportFilters): ReportDefinition {
   const runs = listProductionRuns(factoryId);
+  const productFilter = filters.productId
+    ? getReportOptions(factoryId).products.find((product) => product.id === filters.productId) ?? null
+    : undefined;
   const rows: ReportRow[] = [];
   for (const run of runs) {
-    if (filters.productId && !run.productCode) continue;
+    if (
+      filters.productId &&
+      (!productFilter || (run.productCode !== productFilter.code && run.productName !== productFilter.name))
+    ) {
+      continue;
+    }
     const detail = getProductionRunDetail(factoryId, run.runNumber);
     if (!detail) continue;
     const date = detail.postedAt ?? detail.completedAt ?? detail.createdAt;
@@ -575,8 +583,8 @@ function customerLedger(factoryId: number, filters: ReportFilters): ReportDefini
         customer: row.customerName,
         document: row.document,
         type: direction === "debit" ? "correction" : "receipt",
-        debitPaise: 0,
-        creditPaise: signed > 0 ? signed : -signed,
+        debitPaise: signed < 0 ? -signed : 0,
+        creditPaise: signed > 0 ? signed : 0,
       };
     });
   const rows = [...invoiceRows, ...paymentRows].sort((left, right) => {
@@ -645,7 +653,7 @@ function productProfitability(factoryId: number, filters: ReportFilters): Report
       marginBasisPoints: 0,
     };
     row.packets = Number(row.packets) + line.quantityPackets;
-    row.revenuePaise = Number(row.revenuePaise) + line.lineTotalPaise;
+    row.revenuePaise = Number(row.revenuePaise) + line.taxablePaise;
     row.taxPaise = Number(row.taxPaise) + line.taxPaise;
     grouped.set(line.productId, row);
   }
@@ -664,7 +672,7 @@ function productProfitability(factoryId: number, filters: ReportFilters): Report
     row.costPaise = Number(row.packets) * costPerPacket;
     const revenue = Number(row.revenuePaise);
     const cost = Number(row.costPaise);
-    row.marginPaise = Math.max(0, revenue - cost);
+    row.marginPaise = revenue - cost;
     row.marginBasisPoints = revenue > 0 ? calculateMarginBasisPoints(revenue, cost) : 0;
   }
   return {

@@ -1,5 +1,5 @@
 import "server-only";
-import { and, asc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import {
   addPaise,
   assertHsnCode,
@@ -505,7 +505,6 @@ export function cancelInvoice(actor: WorkflowActor, invoiceNumber: string, input
     if (invoice.status === "cancelled") {
       throw new WorkflowError("This invoice has already been cancelled.", "already_cancelled");
     }
-
     const items = tx
       .select()
       .from(invoiceItems)
@@ -562,6 +561,45 @@ export function cancelInvoice(actor: WorkflowActor, invoiceNumber: string, input
           updatedAt: now,
         })
         .run();
+      if (item.salesOrderItemId !== null) {
+        tx.update(salesOrderItems)
+          .set({
+            invoicedPackets: sql`${salesOrderItems.invoicedPackets} - ${item.quantityPackets}`,
+            updatedAt: now,
+          })
+          .where(eq(salesOrderItems.id, item.salesOrderItemId))
+          .run();
+      }
+    }
+
+    let amountPaidPaise = invoice.amountPaidPaise;
+    if (invoice.amountPaidPaise > 0) {
+      const latestPayment = tx
+        .select({ method: payments.method })
+        .from(payments)
+        .where(eq(payments.invoiceId, invoice.id))
+        .orderBy(desc(payments.id))
+        .get();
+      const refundNumber = allocateDocumentNumber(tx, actor.factoryId, "PAYMENT", creditNoteDate);
+      tx.insert(payments)
+        .values({
+          factoryId: actor.factoryId,
+          invoiceId: invoice.id,
+          customerId: invoice.customerId,
+          paymentNumber: refundNumber.number,
+          paidAt: creditNoteDate,
+          amountPaise: invoice.amountPaidPaise,
+          method: latestPayment?.method ?? "other",
+          notes: `Refund for cancelled invoice ${invoiceNumber}.`,
+          direction: "debit",
+          status: "correction",
+          reason: input.reason,
+          duplicateKey: null,
+          recordedByUserId: actor.userId,
+          updatedAt: now,
+        })
+        .run();
+      amountPaidPaise = 0;
     }
 
     tx.update(invoices)
@@ -569,6 +607,7 @@ export function cancelInvoice(actor: WorkflowActor, invoiceNumber: string, input
         status: "cancelled",
         creditNoteNumber: numbered.number,
         creditNotePaise: invoice.totalPaise,
+        amountPaidPaise,
         cancellationReason: input.reason,
         cancelledAt: now,
         updatedAt: now,
@@ -580,6 +619,7 @@ export function cancelInvoice(actor: WorkflowActor, invoiceNumber: string, input
       invoiceNumber,
       creditNoteNumber: numbered.number,
       reason: input.reason,
+      refundedPaise: invoice.amountPaidPaise,
     });
 
     const updated = tx.select().from(invoices).where(eq(invoices.id, invoice.id)).get();

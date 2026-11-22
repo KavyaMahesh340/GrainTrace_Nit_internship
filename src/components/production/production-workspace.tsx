@@ -174,10 +174,10 @@ export function ProductionWorkspace({ initialRuns, initialOverview, options, can
   }
 
   useEffect(() => {
-    if (!focus) return;
+    if (!focus || !runs.some((run) => run.runNumber === focus)) return;
     void openDetail(focus);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [focus]);
+  }, [focus, runs]);
 
   async function runAction(url: string, body: unknown, message: string) {
     setBusy(true);

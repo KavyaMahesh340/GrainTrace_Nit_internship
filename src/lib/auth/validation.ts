@@ -1,6 +1,7 @@
 import { z } from "zod";
+import { ROLES } from "./permissions";
 
-export const roleNameSchema = z.enum(["owner", "admin", "salesman", "production", "accountant"]);
+export const roleNameSchema = z.enum(ROLES);
 
 export const loginSchema = z.object({
   email: z.string().trim().toLowerCase().email().max(254),
