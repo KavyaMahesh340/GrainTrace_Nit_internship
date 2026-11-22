@@ -43,19 +43,28 @@ Delivered:
 
 **Exit criteria:** migrations, seed, typecheck, lint, tests, production build, and responsive checks pass; Phase 2 is committed before stopping.
 
+## Phase 3 — Domain engine and benchmark (completed)
+
+The active Phase 3 brief required business logic before large workflow UI screens.
+
+Delivered:
+
+1. A pure `src/domain/` layer with no React, UI, or database imports.
+2. Integer-paise money helpers, rational unit costs, margin and markup separation, and basis-point calculations.
+3. Exact base-unit quantity conversions for grams, millilitres, and pieces with explicit conversion failures.
+4. Append-only stock ledger functions with source references, balance derivation, negative-stock prevention, and duplicate-posting rejection.
+5. Weighted average costing and immutable production cost snapshots.
+6. GST functions with HSN validation, intra-state CGST/SGST split, inter-state IGST, and paise rounding.
+7. Production metrics for planned usage, actual usage, output, damage, yield, variance flags, overhead allocation, and cost per good packet.
+8. Invoice, payment, order fulfilment, partial dispatch, backorder, and overpayment rules.
+9. A deterministic benchmark fixture and nine-test Vitest suite covering all supplied values plus required edge cases.
+10. A human-readable acceptance report in `docs/BENCHMARK.md`.
+
+**Exit criteria:** all tests pass, typecheck and lint pass, production build succeeds, and Phase 3 is committed before stopping.
+
 ## Following phase
 
-Order-to-purchase workflows and repository-backed overview data remain deferred until their business rules are supplied. No subsequent phase begins automatically.
-
-## Phase 3 — Recipe, production, and finished goods
-
-Planned scope:
-
-- Recipe versions and ingredient ratios.
-- Production batches, input weighing, output recording, and exceptions.
-- Finished-goods packets and lot linkage.
-- Physical Batch DNA trace across raw material, production, and finished goods.
-- Manufacturing calculation tests once formulas are supplied.
+Workflow services, repository-backed transactions, live reporting, and workflow UI screens remain deferred. No subsequent phase begins automatically.
 
 ## Phase 4 — Invoice, dispatch, collection, and audit
 

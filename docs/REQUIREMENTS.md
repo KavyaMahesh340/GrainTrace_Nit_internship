@@ -4,7 +4,7 @@
 
 Source of truth: `docs/PROBLEM.md`. The original file was absent from the workspace; the supplied brief was preserved there and used verbatim.
 
-GRAINTRACE is a manufacturing intelligence system for small food manufacturers. Phase 1 delivered the foundation, design system, application shell, factory overview, and honest route structure. Phase 2 adds the normalized database, authentication, expiring sessions, and server-enforced role permissions. It does **not** implement the business workflows.
+GRAINTRACE is a manufacturing intelligence system for small food manufacturers. Phase 1 delivered the foundation, design system, application shell, factory overview, and honest route structure. Phase 2 delivered the normalized database, authentication, expiring sessions, and server-enforced role permissions. Phase 3 adds the pure domain engine and deterministic benchmark. Workflow services and UI screens remain intentionally unimplemented.
 
 A requirement is marked **explicit** when stated in the brief and **implied** when directly named by the material-journey chain but lacking detail. Implied items are recorded for planning only and are not implemented or expanded with invented rules.
 
@@ -199,6 +199,29 @@ The Phase 2 brief supplied in conversation is the active source for this section
 | P2-FR-11 | Seed deterministic demo accounts and necessary initial master data safely on rerun. | Implemented |
 | P2-FR-12 | Support transactions for related writes and use them in the seed. | Implemented |
 | P2-FR-13 | Test hashing, login success/failure, session validation, role access, invalid input, and duplicate users. | Implemented |
-| P2-FR-14 | Run migrations, seed, tests, build, and commit Phase 2. | Pending final verification and commit |
+| P2-FR-14 | Run migrations, seed, tests, build, and commit Phase 2. | Implemented and committed |
 
-Business workflows, quantity-conservation services, reports, and offline synchronization remain out of scope for Phase 2.
+Business workflows, quantity-conservation services, reports, and offline synchronization remained out of scope for Phase 2.
+
+## Phase 3 requirements
+
+The Phase 3 brief supplied in conversation is the active source for this section. It adds domain logic and benchmark verification without starting large workflow UI screens.
+
+| ID | Requirement | Status |
+| --- | --- | --- |
+| P3-FR-01 | Keep business logic independent of React, UI components, and database access in `src/domain/`. | Implemented |
+| P3-FR-02 | Store and calculate all money as integer paise; provide addition, subtraction, tax, rounding, percentage, margin, and balance helpers. | Implemented |
+| P3-FR-03 | Store quantities as integer grams, millilitres, or pieces and provide exact conversion utilities. | Implemented |
+| P3-FR-04 | Derive stock balances only from an append-only ledger with a source reference for every movement. | Implemented |
+| P3-FR-05 | Calculate weighted average raw-material cost and snapshot production cost at posting. | Implemented |
+| P3-FR-06 | Allocate production overhead to good output and keep historical cost independent of later purchases. | Implemented |
+| P3-FR-07 | Support HSN, GST, CGST plus SGST for intra-state transactions, IGST for inter-state transactions, and paise rounding. | Implemented |
+| P3-FR-08 | Calculate planned and actual material usage, good and damaged output, yield, material variance, yield variance, cost per good packet, and overhead allocation. | Implemented |
+| P3-FR-09 | Use a default 3% variance tolerance and flag values that exceed it. | Implemented |
+| P3-FR-10 | Record payments, calculate outstanding balances, support partial payments, validate payments, and prevent overpayment. | Implemented |
+| P3-FR-11 | Prevent dispatch beyond available finished goods while supporting partial fulfilment and backorders. | Implemented |
+| P3-FR-12 | Create a deterministic benchmark fixture and `benchmark.test.ts` covering every supplied target and required edge case. | Implemented |
+| P3-FR-13 | Produce a human-readable benchmark report in `docs/BENCHMARK.md`. | Implemented |
+| P3-FR-14 | Run tests and fix failures, then verify and commit Phase 3. | Implemented and committed |
+
+Workflow services that write to SQLite, live reporting, and workflow UI screens remain out of scope for Phase 3.

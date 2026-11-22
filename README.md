@@ -2,7 +2,7 @@
 
 Every packet produced. Every gram accounted for.
 
-GRAINTRACE is a manufacturing intelligence system for small food manufacturers, organized around the material journey from salesman order through audit. This repository contains **Phase 1: Foundation & Design System** plus the **Phase 2 database, authentication, and role foundation**. Operational preview sections remain explicitly labeled; business workflows are still not active.
+GRAINTRACE is a manufacturing intelligence system for small food manufacturers, organized around the material journey from salesman order through audit. This repository contains **Phase 1: Foundation & Design System**, the **Phase 2 database, authentication, and role foundation**, and the **Phase 3 pure domain engine and benchmark**. Operational preview sections remain explicitly labeled; workflow services and business UI screens are still not active.
 
 ## Prerequisites
 
@@ -107,6 +107,7 @@ src/components/layout/  Application shell, navigation, and user menu
 src/components/overview/ Factory overview sections
 src/components/system/  System-level client components
 src/components/ui/      Reusable shadcn-style primitives
+src/domain/             Pure money, unit, inventory, costing, production, tax, invoice, payment, and order rules
 src/lib/auth/           Password hashing, sessions, permissions, and login service
 src/lib/data/           Zod-validated preview snapshot
 src/lib/db/             Drizzle schema, connection, migrations, and seed
@@ -117,7 +118,7 @@ src/lib/navigation.ts   Route registry
 src/tests/              Vitest setup and suites
 ```
 
-## Phase 1 and Phase 2 foundation scope
+## Phase 1, Phase 2, and Phase 3 scope
 
 Implemented:
 
@@ -135,6 +136,8 @@ Implemented:
 - Role permission matrix, protected layouts and routes, role-filtered navigation, and role-specific landing views.
 - Standalone sign-in, unauthorized, session-expired, operating profile, and confirmed sign-out experiences.
 - Server-side Zod validation for credentials and route references; no client role or user ID is trusted.
+- Pure domain rules for integer money, exact unit conversion, append-only stock, weighted average costing, production variance, GST, invoices, payments, and partial fulfilment.
+- Deterministic Phase 3 benchmark fixture, acceptance tests, and report in `docs/BENCHMARK.md`.
 
 Not implemented:
 
@@ -143,7 +146,7 @@ Not implemented:
 - Report generation despite the report libraries being installed.
 - Live database-backed pages.
 - Offline write synchronization.
-- Business calculations, reports, and benchmarks that were not supplied in the source brief.
+- Business reports and exports; the supplied calculations are implemented in the pure domain layer but no live report or export screen consumes them.
 - Upstream security advisories affecting the mandated Next.js 14 line and a transitive ExcelJS dependency; fixes require stack changes that were not authorized in Phase 1.
 
 ## Verification
@@ -171,8 +174,9 @@ npm run verify:responsive
 - `docs/REQUIREMENTS.md` — complete requirement trace
 - `docs/IMPLEMENTATION_PLAN.md` — phase plan and exact next phase
 - `docs/ARCHITECTURE.md` — technical architecture and decisions
+- `docs/BENCHMARK.md` — Phase 3 deterministic calculation report
 - `docs/DESIGN_SYSTEM.md` — visual and interaction system
 
 ## Git
 
-Phase 1 is committed as a foundation checkpoint. Do not commit secrets or local database files. Demo passwords are documentation-only credentials for local evaluation.
+Phase 1, Phase 2, and Phase 3 are committed checkpoints. Do not commit secrets or local database files. Demo passwords are documentation-only credentials for local evaluation.

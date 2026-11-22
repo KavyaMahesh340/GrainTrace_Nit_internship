@@ -52,6 +52,18 @@ src/
 │   ├── overview/                Overview-specific compositions
 │   ├── system/                  Preview badge, reveal, module guards
 │   └── ui/                      Reusable shadcn-style primitives
+├── domain/                      Pure business engine; no React, UI, or DB imports
+│   ├── benchmark.ts             Deterministic acceptance fixture
+│   ├── costing.ts               Weighted average and usage costing
+│   ├── inventory.ts             Append-only stock ledger rules
+│   ├── invoices.ts              GST invoice construction
+│   ├── money.ts                 Integer paise and exact rational helpers
+│   ├── orders.ts                Fulfilment, partial dispatch, backorders
+│   ├── payments.ts              Payment recording and balances
+│   ├── production.ts            Yield, variance, overhead, cost snapshots
+│   ├── tax.ts                   HSN, CGST/SGST, IGST, paise rounding
+│   ├── units.ts                 Exact base-unit conversions
+│   └── validation.ts            Domain errors and primitive invariants
 ├── lib/
 │   ├── auth/                    Passwords, sessions, permissions, login service
 │   ├── data/preview.ts          Zod-validated preview snapshot
@@ -87,6 +99,17 @@ Sign-in flow:
 ```
 
 Protected pages never receive a role, user ID, or permission list from the client. The role is read from the database through the server-validated session. Preview data remains explicitly labeled, and no workflow page writes to the database.
+
+Phase 3 introduces a pure calculation layer beside the UI and persistence layers:
+
+```text
+Domain input (plain data)
+  → src/domain validation
+  → money, unit, inventory, costing, production, tax, invoice, payment, or order rule
+  → plain immutable result or explicit DomainError
+```
+
+Future workflow services will own transactions and call these functions. The domain layer never calls Drizzle, Next.js, React, or browser APIs, so the same rules can be tested deterministically without a running application.
 
 ## Route map
 
@@ -149,7 +172,7 @@ Migration and seed workflow:
 
 `DATABASE_URL` defaults to `./data/graintrace.db`. Local database files are ignored by Git. The seed runs inside a SQLite transaction and is safe to rerun without duplicate codes, emails, or BOM lines.
 
-Business calculation rules, document numbering policies, tolerance enforcement, and workflow state transitions remain unspecified; the schema can hold the evidence, but no workflow writes it yet.
+Phase 3 defines the calculation rules in `src/domain/` rather than in the database: integer-paise money, exact base-unit conversions, weighted average costing, production snapshots, 3% variance tolerance, GST splits, payment balances, and fulfilment limits. No workflow service writes those results to SQLite yet, and document numbering policies and workflow state transitions remain outside the current phase.
 
 ## Authentication and authorization
 
@@ -223,6 +246,7 @@ Landing destinations are role-derived: Owner and Admin go to `/`, Salesman to `/
 - `offline-queue.test.ts`: real IndexedDB operations using fake-indexeddb, including validation failure.
 - `empty-state.test.tsx`: honest empty state and working action link.
 - `auth.test.ts`: password hashing/verification, generic failures, role-derived login redirects, absent/malformed/expired/revoked sessions, server permission matrix, and duplicate-user rejection.
+- `benchmark.test.ts`: deterministic Phase 3 acceptance values, conversion errors, stock protection, tax rounding, weighted average, cost snapshots, variance tolerance, partial dispatch, payments, outstanding balances, and duplicate posting.
 - Verification commands: `npm run typecheck`, `npm run lint`, `npm test`, `npm run build`.
 
 Browser responsive and console-error checks are automated by `scripts/responsive-check.mjs` using Puppeteer Core and an installed Chrome or Edge binary. The script signs in with the seeded Owner account, then checks 375px, 768px, 1024px, and 1440px plus representative protected routes, the unauthorized state, and a not-found route.
@@ -234,6 +258,7 @@ Browser responsive and console-error checks are automated by `scripts/responsive
 - The stock ledger tables exist, but no workflow service writes them or enforces quantity conservation yet.
 - No synchronization backend for the offline queue.
 - Service worker caches GET responses only; it does not synchronize writes.
-- Business calculations, reports, and benchmarks are undefined in the source brief.
+- The Phase 3 domain engine is pure and tested, but no workflow service or UI screen calls it yet.
+- Business reports and exports remain undefined and unimplemented.
 - The seed creates master data only; order, receipt, production, invoice, payment, and dispatch workflows are intentionally empty.
 - `npm audit --omit=dev` reports advisories against the Next.js 14 line whose published fixes require Next.js 15.5+ or 16, plus a transitive `uuid` advisory through ExcelJS. The fixed stack was retained as instructed; these must be reviewed before public deployment.
