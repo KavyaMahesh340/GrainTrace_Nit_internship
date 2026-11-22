@@ -11,6 +11,13 @@ export const factories = sqliteTable("factories", {
   code: text("code").notNull().unique(),
   name: text("name").notNull(),
   timezone: text("timezone").notNull().default("Asia/Kolkata"),
+  gstin: text("gstin").notNull().default(""),
+  addressLine1: text("address_line1").notNull().default(""),
+  city: text("city").notNull().default(""),
+  state: text("state").notNull().default("Maharashtra"),
+  postalCode: text("postal_code").notNull().default(""),
+  phone: text("phone").notNull().default(""),
+  email: text("email").notNull().default(""),
   ...timestamps,
 });
 
@@ -81,19 +88,34 @@ export const customers = sqliteTable(
       .references(() => factories.id, { onDelete: "restrict" }),
     code: text("code").notNull(),
     name: text("name").notNull(),
+    customerType: text("customer_type").notNull().default("retailer"),
     contactName: text("contact_name"),
     email: text("email"),
     phone: text("phone"),
     addressLine1: text("address_line1"),
+    addressLine2: text("address_line2"),
     city: text("city"),
     state: text("state"),
     postalCode: text("postal_code"),
     gstin: text("gstin"),
+    deliveryAddressLine1: text("delivery_address_line1"),
+    deliveryAddressLine2: text("delivery_address_line2"),
+    deliveryCity: text("delivery_city"),
+    deliveryState: text("delivery_state"),
+    deliveryPostalCode: text("delivery_postal_code"),
+    creditTermsDays: integer("credit_terms_days").notNull().default(30),
+    creditLimitPaise: integer("credit_limit_paise").notNull().default(0),
+    status: text("status").notNull().default("active"),
     ...timestamps,
   },
   (table) => [
     uniqueIndex("customers_factory_code_unique").on(table.factoryId, table.code),
     index("customers_factory_idx").on(table.factoryId),
+    index("customers_status_idx").on(table.status),
+    check("customers_type_check", sql`${table.customerType} in ('retailer', 'distributor')`),
+    check("customers_status_check", sql`${table.status} in ('active', 'inactive', 'blocked')`),
+    check("customers_credit_terms_check", sql`${table.creditTermsDays} >= 0 and ${table.creditTermsDays} <= 365`),
+    check("customers_credit_limit_check", sql`${table.creditLimitPaise} >= 0`),
   ],
 );
 
@@ -264,8 +286,13 @@ export const salesOrders = sqliteTable(
       .references(() => customers.id, { onDelete: "restrict" }),
     orderNumber: text("order_number").notNull(),
     orderDate: text("order_date").notNull(),
+    requestedDate: text("requested_date"),
     status: text("status").notNull().default("draft"),
     totalAmountPaise: integer("total_amount_paise").notNull().default(0),
+    notes: text("notes").notNull().default(""),
+    salesmanUserId: integer("salesman_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
     createdByUserId: integer("created_by_user_id")
       .notNull()
       .references(() => users.id, { onDelete: "restrict" }),
@@ -280,7 +307,10 @@ export const salesOrders = sqliteTable(
     index("sales_orders_factory_idx").on(table.factoryId),
     index("sales_orders_customer_idx").on(table.customerId),
     index("sales_orders_status_idx").on(table.status),
-    check("sales_orders_status_check", sql`${table.status} in ('draft', 'confirmed', 'approved', 'rejected', 'fulfilled', 'cancelled')`),
+    check(
+      "sales_orders_status_check",
+      sql`${table.status} in ('draft', 'submitted', 'confirmed', 'approved', 'partially_fulfilled', 'fulfilled', 'rejected', 'cancelled')`,
+    ),
     check("sales_orders_total_check", sql`${table.totalAmountPaise} >= 0`),
   ],
 );
@@ -297,14 +327,27 @@ export const salesOrderItems = sqliteTable(
       .references(() => products.id, { onDelete: "restrict" }),
     quantityPackets: integer("quantity_packets").notNull(),
     unitPricePaise: integer("unit_price_paise").notNull(),
+    discountPaise: integer("discount_paise").notNull().default(0),
     lineTotalPaise: integer("line_total_paise").notNull(),
+    hsnCode: text("hsn_code").notNull().default(""),
+    fulfilledPackets: integer("fulfilled_packets").notNull().default(0),
+    invoicedPackets: integer("invoiced_packets").notNull().default(0),
     ...timestamps,
   },
   (table) => [
     index("sales_order_items_order_idx").on(table.salesOrderId),
     check("sales_order_items_quantity_check", sql`${table.quantityPackets} > 0`),
     check("sales_order_items_price_check", sql`${table.unitPricePaise} >= 0`),
+    check("sales_order_items_discount_check", sql`${table.discountPaise} >= 0 and ${table.discountPaise} <= ${table.unitPricePaise}`),
     check("sales_order_items_total_check", sql`${table.lineTotalPaise} >= 0`),
+    check(
+      "sales_order_items_fulfilled_check",
+      sql`${table.fulfilledPackets} >= 0 and ${table.fulfilledPackets} <= ${table.quantityPackets}`,
+    ),
+    check(
+      "sales_order_items_invoiced_check",
+      sql`${table.invoicedPackets} >= 0 and ${table.invoicedPackets} <= ${table.fulfilledPackets}`,
+    ),
   ],
 );
 
@@ -860,12 +903,31 @@ export const invoices = sqliteTable(
       .notNull()
       .references(() => customers.id, { onDelete: "restrict" }),
     invoiceNumber: text("invoice_number").notNull(),
+    financialYear: text("financial_year").notNull(),
     invoiceDate: text("invoice_date").notNull(),
     dueDate: text("due_date").notNull(),
+    fromState: text("from_state").notNull(),
+    fromGstin: text("from_gstin").notNull().default(""),
+    fromAddressLine1: text("from_address_line1").notNull().default(""),
+    fromCity: text("from_city").notNull().default(""),
+    fromPostalCode: text("from_postal_code").notNull().default(""),
+    toState: text("to_state").notNull(),
+    toGstin: text("to_gstin").notNull().default(""),
+    toAddressLine1: text("to_address_line1").notNull().default(""),
+    toCity: text("to_city").notNull().default(""),
+    toPostalCode: text("to_postal_code").notNull().default(""),
+    jurisdiction: text("jurisdiction").notNull(),
+    hsnCode: text("hsn_code").notNull().default(""),
+    paymentTermsDays: integer("payment_terms_days").notNull().default(0),
     subtotalPaise: integer("subtotal_paise").notNull(),
     taxPaise: integer("tax_paise").notNull().default(0),
     totalPaise: integer("total_paise").notNull(),
     amountPaidPaise: integer("amount_paid_paise").notNull().default(0),
+    creditNoteNumber: text("credit_note_number"),
+    creditNotePaise: integer("credit_note_paise").notNull().default(0),
+    cancellationReason: text("cancellation_reason"),
+    cancelledAt: text("cancelled_at"),
+    postedAt: text("posted_at"),
     status: text("status").notNull().default("draft"),
     createdByUserId: integer("created_by_user_id")
       .notNull()
@@ -878,7 +940,9 @@ export const invoices = sqliteTable(
     index("invoices_order_idx").on(table.salesOrderId),
     index("invoices_customer_idx").on(table.customerId),
     index("invoices_status_idx").on(table.status),
-    check("invoices_amounts_check", sql`${table.subtotalPaise} >= 0 and ${table.taxPaise} >= 0 and ${table.totalPaise} >= 0 and ${table.amountPaidPaise} >= 0`),
+    check("invoices_amounts_check", sql`${table.subtotalPaise} >= 0 and ${table.taxPaise} >= 0 and ${table.totalPaise} >= 0 and ${table.amountPaidPaise} >= 0 and ${table.creditNotePaise} >= 0`),
+    check("invoices_jurisdiction_check", sql`${table.jurisdiction} in ('intra_state', 'inter_state')`),
+    check("invoices_terms_check", sql`${table.paymentTermsDays} >= 0 and ${table.paymentTermsDays} <= 365`),
     check("invoices_status_check", sql`${table.status} in ('draft', 'issued', 'partially_paid', 'paid', 'overdue', 'cancelled')`),
   ],
 );
@@ -890,19 +954,32 @@ export const invoiceItems = sqliteTable(
     invoiceId: integer("invoice_id")
       .notNull()
       .references(() => invoices.id, { onDelete: "cascade" }),
+    salesOrderItemId: integer("sales_order_item_id").references(() => salesOrderItems.id, {
+      onDelete: "set null",
+    }),
     productId: integer("product_id")
       .notNull()
       .references(() => products.id, { onDelete: "restrict" }),
+    hsnCode: text("hsn_code").notNull().default(""),
     quantityPackets: integer("quantity_packets").notNull(),
     unitPricePaise: integer("unit_price_paise").notNull(),
-    lineTotalPaise: integer("line_total_paise").notNull(),
+    taxablePaise: integer("taxable_paise").notNull(),
+    rateBasisPoints: integer("rate_basis_points").notNull().default(500),
+    cgstPaise: integer("cgst_paise").notNull().default(0),
+    sgstPaise: integer("sgst_paise").notNull().default(0),
+    igstPaise: integer("igst_paise").notNull().default(0),
     taxPaise: integer("tax_paise").notNull().default(0),
+    lineTotalPaise: integer("line_total_paise").notNull(),
     ...timestamps,
   },
   (table) => [
     index("invoice_items_invoice_idx").on(table.invoiceId),
+    index("invoice_items_order_item_idx").on(table.salesOrderItemId),
     check("invoice_items_quantity_check", sql`${table.quantityPackets} > 0`),
-    check("invoice_items_amounts_check", sql`${table.unitPricePaise} >= 0 and ${table.lineTotalPaise} >= 0 and ${table.taxPaise} >= 0`),
+    check(
+      "invoice_items_amounts_check",
+      sql`${table.unitPricePaise} >= 0 and ${table.taxablePaise} >= 0 and ${table.lineTotalPaise} >= 0 and ${table.taxPaise} >= 0`,
+    ),
   ],
 );
 
@@ -955,9 +1032,12 @@ export const dispatches = sqliteTable(
       .references(() => customers.id, { onDelete: "restrict" }),
     dispatchNumber: text("dispatch_number").notNull(),
     dispatchedAt: text("dispatched_at").notNull(),
+    expectedDate: text("expected_date"),
+    deliveredAt: text("delivered_at"),
     status: text("status").notNull().default("planned"),
     carrierName: text("carrier_name"),
     trackingNumber: text("tracking_number"),
+    notes: text("notes").notNull().default(""),
     createdByUserId: integer("created_by_user_id")
       .notNull()
       .references(() => users.id, { onDelete: "restrict" }),
@@ -980,6 +1060,9 @@ export const dispatchItems = sqliteTable(
     dispatchId: integer("dispatch_id")
       .notNull()
       .references(() => dispatches.id, { onDelete: "cascade" }),
+    salesOrderItemId: integer("sales_order_item_id").references(() => salesOrderItems.id, {
+      onDelete: "set null",
+    }),
     finishedGoodPacketId: integer("finished_good_packet_id")
       .notNull()
       .references(() => finishedGoodPackets.id, { onDelete: "restrict" }),
@@ -989,6 +1072,7 @@ export const dispatchItems = sqliteTable(
   (table) => [
     index("dispatch_items_dispatch_idx").on(table.dispatchId),
     index("dispatch_items_packet_idx").on(table.finishedGoodPacketId),
+    index("dispatch_items_order_item_idx").on(table.salesOrderItemId),
     check("dispatch_items_quantity_check", sql`${table.quantityPackets} > 0`),
   ],
 );
@@ -1014,6 +1098,101 @@ export const auditLog = sqliteTable(
     index("audit_log_entity_idx").on(table.entityType, table.entityId),
     index("audit_log_created_idx").on(table.createdAt),
     check("audit_log_severity_check", sql`${table.severity} in ('info', 'warning', 'critical')`),
+  ],
+);
+
+export const documentNumberSequences = sqliteTable(
+  "document_number_sequences",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    factoryId: integer("factory_id")
+      .notNull()
+      .references(() => factories.id, { onDelete: "restrict" }),
+    documentType: text("document_type").notNull(),
+    scopeKey: text("scope_key").notNull(),
+    prefix: text("prefix").notNull(),
+    padding: integer("padding").notNull().default(4),
+    nextValue: integer("next_value").notNull().default(1),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex("document_number_sequences_scope_unique").on(table.factoryId, table.documentType, table.scopeKey),
+    check("document_number_sequences_prefix_check", sql`length(${table.prefix}) > 0`),
+    check("document_number_sequences_padding_check", sql`${table.padding} between 1 and 8`),
+    check("document_number_sequences_next_check", sql`${table.nextValue} > 0`),
+  ],
+);
+
+export const creditNotes = sqliteTable(
+  "credit_notes",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    factoryId: integer("factory_id")
+      .notNull()
+      .references(() => factories.id, { onDelete: "restrict" }),
+    invoiceId: integer("invoice_id")
+      .notNull()
+      .references(() => invoices.id, { onDelete: "restrict" }),
+    customerId: integer("customer_id")
+      .notNull()
+      .references(() => customers.id, { onDelete: "restrict" }),
+    creditNoteNumber: text("credit_note_number").notNull(),
+    financialYear: text("financial_year").notNull(),
+    creditNoteDate: text("credit_note_date").notNull(),
+    reason: text("reason").notNull(),
+    jurisdiction: text("jurisdiction").notNull(),
+    hsnCode: text("hsn_code").notNull().default(""),
+    subtotalPaise: integer("subtotal_paise").notNull(),
+    cgstPaise: integer("cgst_paise").notNull().default(0),
+    sgstPaise: integer("sgst_paise").notNull().default(0),
+    igstPaise: integer("igst_paise").notNull().default(0),
+    taxPaise: integer("tax_paise").notNull().default(0),
+    totalPaise: integer("total_paise").notNull(),
+    status: text("status").notNull().default("issued"),
+    createdByUserId: integer("created_by_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex("credit_notes_factory_number_unique").on(table.factoryId, table.creditNoteNumber),
+    uniqueIndex("credit_notes_invoice_unique").on(table.invoiceId),
+    index("credit_notes_factory_idx").on(table.factoryId),
+    index("credit_notes_customer_idx").on(table.customerId),
+    check("credit_notes_reason_check", sql`length(${table.reason}) > 0`),
+    check("credit_notes_amounts_check", sql`${table.subtotalPaise} >= 0 and ${table.taxPaise} >= 0 and ${table.totalPaise} >= 0`),
+    check("credit_notes_status_check", sql`${table.status} in ('issued', 'adjusted')`),
+  ],
+);
+
+export const creditNoteItems = sqliteTable(
+  "credit_note_items",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    creditNoteId: integer("credit_note_id")
+      .notNull()
+      .references(() => creditNotes.id, { onDelete: "cascade" }),
+    invoiceItemId: integer("invoice_item_id").references(() => invoiceItems.id, {
+      onDelete: "set null",
+    }),
+    productId: integer("product_id")
+      .notNull()
+      .references(() => products.id, { onDelete: "restrict" }),
+    hsnCode: text("hsn_code").notNull().default(""),
+    quantityPackets: integer("quantity_packets").notNull(),
+    unitPricePaise: integer("unit_price_paise").notNull(),
+    taxablePaise: integer("taxable_paise").notNull(),
+    taxPaise: integer("tax_paise").notNull().default(0),
+    lineTotalPaise: integer("line_total_paise").notNull(),
+    ...timestamps,
+  },
+  (table) => [
+    index("credit_note_items_note_idx").on(table.creditNoteId),
+    check("credit_note_items_quantity_check", sql`${table.quantityPackets} > 0`),
+    check(
+      "credit_note_items_amounts_check",
+      sql`${table.unitPricePaise} >= 0 and ${table.taxablePaise} >= 0 and ${table.taxPaise} >= 0 and ${table.lineTotalPaise} >= 0`,
+    ),
   ],
 );
 

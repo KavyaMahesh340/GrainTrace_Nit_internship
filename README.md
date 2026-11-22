@@ -2,7 +2,7 @@
 
 Every packet produced. Every gram accounted for.
 
-GRAINTRACE is a manufacturing intelligence system for small food manufacturers, organized around the material journey from salesman order through audit. This repository contains **Phase 1: Foundation & Design System**, the **Phase 2 database, authentication, and role foundation**, the **Phase 3 pure domain engine and benchmark**, **Phase 4: Purchases and Inventory**, and **Phase 5: Production and Batch DNA**. Purchases, inventory, production, and traceability are live database-backed workflows; other operational sections remain explicitly labeled route shells.
+GRAINTRACE is a manufacturing intelligence system for small food manufacturers, organized around the material journey from salesman order through audit. This repository contains **Phase 1: Foundation & Design System**, the **Phase 2 database, authentication, and role foundation**, the **Phase 3 pure domain engine and benchmark**, **Phase 4: Purchases and Inventory**, **Phase 5: Production and Batch DNA**, and **Phase 6: Sales to Collection**. Purchases, inventory, production, traceability, sales orders, dispatch, GST invoices, and collections are live database-backed workflows; recipes, finished goods, audit, report, and offline synchronization sections remain explicitly labeled shells or limitations.
 
 ## Prerequisites
 
@@ -63,15 +63,15 @@ npm run db:studio
 | `/login` | Standalone role-aware sign-in console |
 | `/session-expired` | Expired or revoked session state |
 | `/` | Protected factory overview with preview data |
-| `/orders` | Planned route shell |
+| `/orders` | Live salesman console, approval control, and order tracking workspace |
 | `/purchases` | Live purchase order, goods receipt, and supplier workflow |
 | `/inventory` | Live stock, batch, movement, alert, and adjustment workspace |
 | `/recipes` | Planned route shell |
 | `/production` | Live production planning, consumption, yield, posting, and cost workspace |
 | `/finished-goods` | Planned route shell |
-| `/invoices` | Planned route shell |
-| `/dispatch` | Planned route shell |
-| `/collections` | Planned route shell |
+| `/invoices` | Live GST invoice, PDF, and credit-note workspace |
+| `/dispatch` | Live fulfilment planning and dispatch workspace |
+| `/collections` | Live receipt and outstanding-invoice workspace |
 | `/audit` | Planned route shell |
 | `/batch-dna` | Live source-to-customer traceability instrument |
 | `/offline` | Protected service-worker offline fallback |
@@ -82,8 +82,12 @@ npm run db:studio
 | `/api/inventory/*` | Server-authorized stock query, detail, overview, and adjustment APIs |
 | `/api/production/*` | Server-authorized production run, planning, completion, posting, overview, and option APIs |
 | `/api/batch-dna/*` | Server-authorized batch trace index and detail APIs |
+| `/api/sales/*` | Server-authorized customer, sales order, option, and status APIs |
+| `/api/dispatch/*` | Server-authorized fulfilment plan, dispatch, detail, and status APIs |
+| `/api/invoices/*` | Server-authorized invoice, PDF, cancellation, option, and candidate APIs |
+| `/api/payments/*` | Server-authorized receipt and collection APIs |
 
-All application routes except `/login`, `/session-expired`, the authentication APIs, and the root not-found state require a valid server-validated session. Purchases, inventory, production, and Batch DNA write or read through server-side workflow services; the remaining route shells are real destinations that state their status without simulating workflows.
+All application routes except `/login`, `/session-expired`, the authentication APIs, and the root not-found state require a valid server-validated session. Purchases, inventory, production, Batch DNA, sales orders, dispatch, invoices, and collections read and write through server-side workflow services; the remaining route shells state their status without simulating workflows.
 
 ## Demo accounts
 
@@ -111,6 +115,8 @@ src/components/layout/  Application shell, navigation, and user menu
 src/components/overview/ Factory overview sections
 src/components/purchases/ Live purchasing workspace
 src/components/inventory/ Live inventory workspace
+src/components/production/ Live production workspace
+src/components/sales/    Salesman console and sales workflow workspaces
 src/components/system/  System-level client components
 src/components/ui/      Reusable shadcn-style primitives
 src/domain/             Pure money, unit, inventory, costing, production, tax, invoice, payment, and order rules
@@ -119,13 +125,13 @@ src/lib/data/           Zod-validated preview snapshot
 src/lib/db/             Drizzle schema, connection, migrations, and seed
 src/lib/domain/         Preview schema and inferred types
 src/lib/offline/        IndexedDB mutation queue
-src/lib/workflows/      Transactional purchasing and inventory services
+src/lib/workflows/      Transactional purchasing, inventory, production, sales, dispatch, invoice, and payment services
 src/lib/format.ts       Presentation helpers
 src/lib/navigation.ts   Route registry
 src/tests/              Vitest setup and suites
 ```
 
-## Phase 1, Phase 2, Phase 3, Phase 4, and Phase 5 scope
+## Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, and Phase 6 scope
 
 Implemented:
 
@@ -153,12 +159,20 @@ Implemented:
 - Ledger-backed production posting that links material consumption, material damage, finished-good receipt, and output damage to one immutable run reference.
 - Live production analytics for planned versus actual output, yield variance, exceptions, labour, overhead, and cost per packet.
 - Real Batch DNA tracing from purchase sources and material lots through recipe, ledger, production, finished goods, dispatch, invoice, and customer evidence.
+- Customer master records with GST, address, credit terms, credit limit, and blocked status.
+- Sales orders with draft, submitted, approved, partially fulfilled, fulfilled, rejected, and cancelled states, with approval separated from creation.
+- Live salesman mobile console with guided entry, live calculations, order detail, and honest offline draft queuing.
+- FEFO packet allocation, partial dispatch, backorders, and append-only finished-goods dispatch postings.
+- April-March document numbering for dispatch, invoices, credit notes, and receipts.
+- GST invoices from dispatched packets, multi-HSN support, printable PDFs, and full reversal credit notes.
+- Numbered receipts, outstanding tracking, payment posting, and overpayment prevention.
+- Server-authorized sales, dispatch, invoice, and collection APIs plus live tracking workspaces.
 
 Not implemented:
 
-- Workflows outside purchases, inventory, production, and Batch DNA, such as recipes, finished goods, invoices, payments, dispatch, collections, and audit reporting.
+- Workflows outside purchases, inventory, production, Batch DNA, and Phase 6 sales-to-collection, such as recipes, finished goods, and audit reporting.
 - Report generation despite the report libraries being installed.
-- Offline write synchronization; the queue foundation exists, but workflow writes require a live server.
+- Offline write synchronization; the salesman console queues drafts honestly, but replay and workflow writes require a live server.
 - Business reports and exports; the supplied calculations are implemented in the pure domain layer but no live report or export screen consumes them.
 - Upstream security advisories affecting the mandated Next.js 14 line and a transitive ExcelJS dependency; fixes require stack changes that were not authorized in Phase 1.
 
@@ -192,4 +206,4 @@ npm run verify:responsive
 
 ## Git
 
-Phase 1, Phase 2, Phase 3, Phase 4, and Phase 5 are committed checkpoints. Do not commit secrets or local database files. Demo passwords are documentation-only credentials for local evaluation.
+Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, and Phase 6 are committed checkpoints. Do not commit secrets or local database files. Demo passwords are documentation-only credentials for local evaluation.

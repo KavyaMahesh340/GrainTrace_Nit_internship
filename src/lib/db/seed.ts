@@ -8,6 +8,7 @@ import { getDb } from "./index";
 import {
   auditLog,
   customers,
+  documentNumberSequences,
   factories,
   packagingMaterials,
   products,
@@ -61,6 +62,20 @@ export function seedDatabase() {
     if (!factory) {
       throw new Error("Unable to create the demo factory.");
     }
+
+    tx.update(factories)
+      .set({
+        gstin: "27AABCG1234M1Z5",
+        addressLine1: "41 Industrial Estate, Phase II",
+        city: "Pune",
+        state: "Maharashtra",
+        postalCode: "411019",
+        phone: "+91 20 2678 4100",
+        email: "accounts@graintrace.local",
+        updatedAt: SEED_TIME,
+      })
+      .where(eq(factories.id, factory.id))
+      .run();
 
     const factoryId = factory.id;
     const roleIds = {} as Record<RoleName, number>;
@@ -116,12 +131,83 @@ export function seedDatabase() {
           factoryId,
           code: customerCode,
           name: "Demonstration Foods",
+          customerType: "retailer",
           contactName: "Rohan Verma",
           email: "orders@demonstration.local",
           phone: "+91 90000 00001",
+          addressLine1: "18 Market Road",
           city: "Pune",
           state: "Maharashtra",
           postalCode: "411001",
+          gstin: "27AABCF9876K1Z9",
+          deliveryState: "Maharashtra",
+          creditTermsDays: 30,
+          creditLimitPaise: 500_000,
+          status: "active",
+          createdAt: SEED_TIME,
+          updatedAt: SEED_TIME,
+        })
+        .run();
+    }
+
+    const distributorCode = "CUST-DEMO-02";
+    const existingDistributor = tx
+      .select()
+      .from(customers)
+      .where(and(eq(customers.factoryId, factoryId), eq(customers.code, distributorCode)))
+      .get();
+    if (!existingDistributor) {
+      tx.insert(customers)
+        .values({
+          factoryId,
+          code: distributorCode,
+          name: "Southline Distributors",
+          customerType: "distributor",
+          contactName: "Ananya Iyer",
+          email: "orders@southline.local",
+          phone: "+91 90000 00003",
+          addressLine1: "72 Wholesale Street",
+          city: "Bengaluru",
+          state: "Karnataka",
+          postalCode: "560001",
+          gstin: "29AACCS6543P1Z7",
+          deliveryState: "Karnataka",
+          creditTermsDays: 45,
+          creditLimitPaise: 1_000_000,
+          status: "active",
+          createdAt: SEED_TIME,
+          updatedAt: SEED_TIME,
+        })
+        .run();
+    }
+
+    const sequenceSeeds = [
+      { documentType: "INVOICE", prefix: "TN", padding: 4 },
+      { documentType: "CREDIT_NOTE", prefix: "CN/TN", padding: 4 },
+      { documentType: "PAYMENT", prefix: "PAY", padding: 4 },
+      { documentType: "DISPATCH", prefix: "DSP", padding: 4 },
+    ];
+    for (const sequence of sequenceSeeds) {
+      const existing = tx
+        .select()
+        .from(documentNumberSequences)
+        .where(
+          and(
+            eq(documentNumberSequences.factoryId, factoryId),
+            eq(documentNumberSequences.documentType, sequence.documentType),
+            eq(documentNumberSequences.scopeKey, "CONFIG"),
+          ),
+        )
+        .get();
+      if (existing) continue;
+      tx.insert(documentNumberSequences)
+        .values({
+          factoryId,
+          documentType: sequence.documentType,
+          scopeKey: "CONFIG",
+          prefix: sequence.prefix,
+          padding: sequence.padding,
+          nextValue: 1,
           createdAt: SEED_TIME,
           updatedAt: SEED_TIME,
         })

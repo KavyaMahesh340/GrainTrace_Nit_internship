@@ -4,7 +4,7 @@
 
 Source of truth: `docs/PROBLEM.md`. The original file was absent from the workspace; the supplied brief was preserved there and used verbatim.
 
-GRAINTRACE is a manufacturing intelligence system for small food manufacturers. Phase 1 delivered the foundation, design system, application shell, factory overview, and honest route structure. Phase 2 delivered the normalized database, authentication, expiring sessions, and server-enforced role permissions. Phase 3 delivered the pure domain engine and deterministic benchmark. Phase 4 delivered live purchasing and inventory workflow services, APIs, and UI screens. Phase 5 adds live production execution and Batch DNA traceability. Other workflow stages remain intentionally unimplemented.
+GRAINTRACE is a manufacturing intelligence system for small food manufacturers. Phase 1 delivered the foundation, design system, application shell, factory overview, and honest route structure. Phase 2 delivered the normalized database, authentication, expiring sessions, and server-enforced role permissions. Phase 3 delivered the pure domain engine and deterministic benchmark. Phase 4 delivered live purchasing and inventory workflow services, APIs, and UI screens. Phase 5 delivered live production execution and Batch DNA traceability. Phase 6 adds sales orders, approval control, dispatch, GST invoices, credit notes, collections, a salesman mobile console, and live order tracking. Recipes and finished-goods route shells remain intentionally unimplemented.
 
 A requirement is marked **explicit** when stated in the brief and **implied** when directly named by the material-journey chain but lacking detail. Implied items are recorded for planning only and are not implemented or expanded with invented rules.
 
@@ -272,3 +272,27 @@ The Phase 5 brief supplied in conversation is the active source for this section
 | P5-FR-14 | Preserve Phase 1–4 behavior and benchmark results, then verify and commit Phase 5. | Implemented |
 
 Recipes, finished goods, invoices, dispatch, collections, audit reporting, live report exports, and offline write synchronization remain outside Phase 5.
+
+## Phase 6 requirements
+
+The Phase 6 brief supplied in conversation is the active source for this section. It extends the material journey with commercial documents from salesman order through collection.
+
+| ID | Requirement | Status |
+| --- | --- | --- |
+| P6-FR-01 | Maintain customer master records with GST, delivery address, credit terms, credit limit, and active/inactive/blocked status. | Implemented |
+| P6-FR-02 | Support sales order statuses: draft, submitted, confirmed legacy, approved, partially fulfilled, fulfilled, rejected, and cancelled. | Implemented |
+| P6-FR-03 | Separate order creation from approval authority; Salesman cannot approve, dispatch, or record payments. | Implemented |
+| P6-FR-04 | Plan dispatch from approved orders using FEFO packet allocation, partial fulfilment, backorders, and whole-packet reservation. | Implemented |
+| P6-FR-05 | Post dispatch to the append-only finished-goods ledger in packets and update per-line fulfilment counters atomically. | Implemented |
+| P6-FR-06 | Generate financial-year document sequences for invoices, credit notes, payments, and dispatch using April-March financial years and configurable prefixes. | Implemented |
+| P6-FR-07 | Create GST tax invoices only from dispatched, uninvoiced packets using the Phase 3 tax engine and frozen intra/inter-state jurisdiction. | Implemented |
+| P6-FR-08 | Keep posted invoices immutable; cancellation creates a full reversing credit note with audit trail instead of deleting or editing tax lines. | Implemented |
+| P6-FR-09 | Produce a printable A4 PDF tax invoice with party, GST, line, tax, and totals evidence. | Implemented |
+| P6-FR-10 | Record numbered receipts against invoices, derive paid/partially paid status, and prevent overpayment or payment against cancelled invoices. | Implemented |
+| P6-FR-11 | Provide a mobile-first salesman console with large touch targets, guided order entry, live values, and honest offline draft queuing. | Implemented |
+| P6-FR-12 | Provide live order tracking, dispatch, invoice, and collection workspaces with real details, status actions, search, filters, and source links. | Implemented |
+| P6-FR-13 | Enforce server-side session and role permissions on every Phase 6 page and API route. | Implemented |
+| P6-FR-14 | Test numbering, order approval, dispatch guards, packet allocation, GST posting, over-invoice prevention, payments, credit notes, and authorization. | Implemented |
+| P6-FR-15 | Preserve Phase 1–5 behavior and benchmark results, then verify and commit Phase 6. | Implemented |
+
+Recipes, finished goods, audit reporting, live report exports, and offline write synchronization remain outside Phase 6. Offline drafts are queued locally and are labelled as queued rather than synchronized.

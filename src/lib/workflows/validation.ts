@@ -158,3 +158,105 @@ export type ProductionPlanInput = z.infer<typeof productionPlanInputSchema>;
 export type ProductionCompletionInput = z.infer<typeof productionCompletionInputSchema>;
 export type ProductionPostingInput = z.infer<typeof productionPostingInputSchema>;
 export type ProductionStatusInput = z.infer<typeof productionStatusSchema>;
+
+const gstin = z
+  .union([z.string().trim().regex(/^[0-9A-Z]{15}$/, "Enter a valid 15-character GSTIN."), z.literal("")])
+  .optional()
+  .default("");
+
+export const customerInputSchema = z.object({
+  code: reference,
+  name: z.string().trim().min(2).max(120),
+  customerType: z.enum(["retailer", "distributor"]),
+  contactName: z.string().trim().max(120).optional().default(""),
+  email: z.union([z.string().trim().email(), z.literal("")]).optional().default(""),
+  phone: z.string().trim().max(32).optional().default(""),
+  addressLine1: z.string().trim().max(160).optional().default(""),
+  addressLine2: z.string().trim().max(160).optional().default(""),
+  city: z.string().trim().max(80).optional().default(""),
+  state: z.string().trim().min(2).max(80),
+  postalCode: z.string().trim().max(16).optional().default(""),
+  gstin,
+  deliveryAddressLine1: z.string().trim().max(160).optional().default(""),
+  deliveryAddressLine2: z.string().trim().max(160).optional().default(""),
+  deliveryCity: z.string().trim().max(80).optional().default(""),
+  deliveryState: z.string().trim().max(80).optional().default(""),
+  deliveryPostalCode: z.string().trim().max(16).optional().default(""),
+  creditTermsDays: z.number().int().min(0).max(365),
+  creditLimitPaise: z.number().int().nonnegative(),
+});
+
+export const customerStatusSchema = z.enum(["active", "inactive", "blocked"]);
+
+export const salesOrderLineSchema = z.object({
+  productId: positiveId,
+  quantityPackets: positiveInteger,
+  unitPricePaise: nonNegativeInteger,
+  discountPaise: nonNegativeInteger.default(0),
+});
+
+export const salesOrderInputSchema = z.object({
+  orderNumber: reference,
+  customerId: positiveId,
+  orderDate: dateValue,
+  requestedDate: optionalDate,
+  notes: z.string().trim().max(500).optional().default(""),
+  lines: z.array(salesOrderLineSchema).min(1),
+});
+
+export const salesOrderStatusSchema = z.enum(["submitted", "approved", "rejected", "cancelled"]);
+
+export const dispatchLineSchema = z.object({
+  salesOrderItemId: positiveId,
+  quantityPackets: positiveInteger,
+});
+
+export const dispatchInputSchema = z.object({
+  salesOrderNumber: reference,
+  dispatchedAt: dateValue,
+  expectedDate: optionalDate,
+  status: z.enum(["in_transit", "delivered"]).default("in_transit"),
+  carrierName: z.string().trim().max(120).optional().default(""),
+  trackingNumber: z.string().trim().max(120).optional().default(""),
+  notes: z.string().trim().max(500).optional().default(""),
+  lines: z.array(dispatchLineSchema).min(1),
+});
+
+export const dispatchStatusSchema = z.enum(["in_transit", "delivered", "cancelled"]);
+
+export const invoiceLineSchema = z.object({
+  salesOrderItemId: positiveId,
+  quantityPackets: positiveInteger,
+});
+
+export const invoiceInputSchema = z.object({
+  salesOrderNumber: reference,
+  invoiceDate: dateValue,
+  rateBasisPoints: z.number().int().min(0).max(10_000).default(500),
+  lines: z.array(invoiceLineSchema).min(1),
+});
+
+export const invoiceCancelSchema = z.object({
+  reason: z.string().trim().min(3).max(500),
+});
+
+export const paymentInputSchema = z.object({
+  invoiceNumber: z.string().trim().min(2).max(64),
+  paidAt: dateValue,
+  amountPaise: positiveInteger,
+  method: z.enum(["cash", "upi", "bank_transfer", "cheque", "other"]),
+  referenceNo: z.string().trim().max(120).optional().default(""),
+});
+
+export type CustomerInput = z.infer<typeof customerInputSchema>;
+export type CustomerStatusInput = z.infer<typeof customerStatusSchema>;
+export type SalesOrderLineInput = z.infer<typeof salesOrderLineSchema>;
+export type SalesOrderInput = z.infer<typeof salesOrderInputSchema>;
+export type SalesOrderStatusInput = z.infer<typeof salesOrderStatusSchema>;
+export type DispatchLineInput = z.infer<typeof dispatchLineSchema>;
+export type DispatchInput = z.infer<typeof dispatchInputSchema>;
+export type DispatchStatusInput = z.infer<typeof dispatchStatusSchema>;
+export type InvoiceLineInput = z.infer<typeof invoiceLineSchema>;
+export type InvoiceInput = z.infer<typeof invoiceInputSchema>;
+export type InvoiceCancelInput = z.infer<typeof invoiceCancelSchema>;
+export type PaymentInput = z.infer<typeof paymentInputSchema>;

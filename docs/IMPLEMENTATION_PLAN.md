@@ -99,6 +99,25 @@ Delivered scope:
 
 **Exit criteria:** schema migration applies, typecheck and lint pass, tests and Phase 3 benchmark pass, production build succeeds, and Phase 5 is committed before stopping.
 
+## Phase 6 — Sales to Collection (completed)
+
+The active Phase 6 brief extends the material journey from salesman order through dispatch, GST invoice, and collection while preserving all earlier phases.
+
+Delivered scope:
+
+1. A schema and migration extension for customers, sales orders and items, dispatch details, GST invoices and items, credit notes and items, payments, and financial-year document-number sequences.
+2. Server-authoritative customer, sales order, approval, dispatch, invoice, PDF, credit-note, and payment workflow services with Zod validation, audit recording, permission checks, and transactional guards.
+3. April-March document numbering for dispatch, invoices, credit notes, and receipts using configurable factory prefixes and transactional sequence allocation.
+4. FEFO packet allocation, partial fulfilment, backorder calculation, over-dispatch prevention, and append-only finished-goods ledger postings in whole packets.
+5. Tax-invoice creation from dispatched, uninvoiced packets using the Phase 3 GST engine, frozen party jurisdiction, multi-HSN handling, immutable posted lines, printable PDF output, and full reversal credit notes.
+6. Numbered receipts with overpayment prevention, outstanding tracking, invoice status recalculation, and collection history.
+7. A mobile-first salesman console with guided entry, live monetary calculations, large touch targets, order detail, network state, and honest offline draft queuing.
+8. Live order tracking, dispatch, invoice, and collection workspaces with search, filters, status actions, document inspectors, source links, and responsive layouts.
+9. Server-authorized APIs for every Phase 6 page, with approval, dispatch, and payment permissions separated from order creation and salesman access.
+10. Workflow tests covering numbering, customer status, approval separation, partial dispatch, packet ledger decrement, GST posting, over-invoice prevention, receipts, overpayment prevention, credit notes, and role authorization.
+
+**Exit criteria:** schema migration applies, typecheck and lint pass, tests and Phase 3 benchmark pass, production build succeeds, and Phase 6 is committed before stopping.
+
 No subsequent phase begins automatically.
 
 ## Dependency policy

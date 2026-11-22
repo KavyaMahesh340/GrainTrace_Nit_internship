@@ -18,9 +18,9 @@ export const navigationGroups: NavigationGroup[] = [
     title: "Command",
     items: [
       { label: "Factory overview", href: "/", index: "00", phase: "Live", permission: "overview:view" },
-      { label: "Orders", href: "/orders", index: "01", phase: "Planned", permission: "orders:view" },
+      { label: "Orders", href: "/orders", index: "01", phase: "Live", permission: "orders:view" },
       { label: "Production", href: "/production", index: "06", phase: "Live", permission: "production:view" },
-      { label: "Dispatch", href: "/dispatch", index: "09", phase: "Planned", permission: "dispatch:view" },
+      { label: "Dispatch", href: "/dispatch", index: "09", phase: "Live", permission: "dispatch:view" },
     ],
   },
   {
@@ -35,8 +35,8 @@ export const navigationGroups: NavigationGroup[] = [
   {
     title: "Accountability",
     items: [
-      { label: "Invoices", href: "/invoices", index: "08", phase: "Planned", permission: "invoices:view" },
-      { label: "Collections", href: "/collections", index: "10", phase: "Planned", permission: "payments:view" },
+      { label: "Invoices", href: "/invoices", index: "08", phase: "Live", permission: "invoices:view" },
+      { label: "Collections", href: "/collections", index: "10", phase: "Live", permission: "payments:view" },
       { label: "Batch DNA", href: "/batch-dna", index: "12", phase: "Live", permission: "batchDna:view" },
       { label: "Audit", href: "/audit", index: "11", phase: "Planned", permission: "audit:view" },
     ],
