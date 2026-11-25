@@ -1,239 +1,350 @@
 # GRAINTRACE
+### Every packet produced. Every gram accounted for.
 
-Every packet produced. Every gram accounted for.
+<p align="center">
+  **Manufacturing Intelligence · Inventory Traceability · Production Accountability**
+</p>
 
-GRAINTRACE is a manufacturing intelligence system for small food manufacturers, organized around the material journey from salesman order through audit. This repository contains **Phase 1: Foundation & Design System**, the **Phase 2 database, authentication, and role foundation**, the **Phase 3 pure domain engine and benchmark**, **Phase 4: Purchases and Inventory**, **Phase 5: Production and Batch DNA**, **Phase 6: Sales to Collection**, **Phase 7: Finance, Reporting, and Audit**, **Phase 8: Offline-First Field Operations**, and **Phase 9: Final Audit and Verification**. Purchases, inventory, production, traceability, sales orders, dispatch, GST invoices, collections, payment corrections, ten reports, CSV/Excel/PDF exports, the audit explorer, and durable offline order synchronization are live workflows; recipes and finished goods remain explicitly labeled shells.
+<p align="center">
+  <img src="https://img.shields.io/badge/Status-Prototype-C8F169?style=for-the-badge&labelColor=171A18" />
+  <img src="https://img.shields.io/badge/Next.js-14-171A18?style=for-the-badge&logo=nextdotjs" />
+  <img src="https://img.shields.io/badge/TypeScript-Enabled-3178C6?style=for-the-badge&logo=typescript" />
+  <img src="https://img.shields.io/badge/Database-SQLite-003B57?style=for-the-badge&logo=sqlite" />
+</p>
 
-## Prerequisites
+<p align="center">
+  <em>One factory. One connected system. Complete accountability.</em>
+</p>
 
-- Node.js 20 LTS or newer (verified on Node.js 22.19.0)
-- npm 10 or newer (verified on npm 11.21.1)
+---
+
+## Overview
+
+**GRAINTRACE** is a manufacturing traceability and operational management platform designed for small and growing food manufacturing businesses.
+
+It connects customer orders, procurement, raw materials, inventory, recipes, production, costing, finished goods, dispatch, invoicing, and payments into one unified system.
+
+Instead of managing operations across disconnected spreadsheets and manual records, GRAINTRACE creates a connected manufacturing workflow where every material movement and production activity can be tracked.
+
+### The core idea
+
+> From raw material procurement to the final customer delivery, every step should be traceable, measurable, and accountable.
+
+---
+
+## The Problem We're Solving
+
+Manufacturing businesses often face challenges such as:
+
+- Disconnected records across purchasing, inventory, and production.
+- Difficulty tracking raw materials and supplier batches.
+- Limited visibility into actual material consumption.
+- Inaccurate production costing and yield calculations.
+- Delayed identification of stock shortages and wastage.
+- Complicated order fulfilment and payment tracking.
+- Difficulty tracing finished products back to their raw material sources.
+
+**GRAINTRACE brings these operations together through a centralized manufacturing intelligence platform.**
+
+---
+
+## Platform Features
+
+| Module | Key Capabilities |
+|---|---|
+| Factory Dashboard | Production overview, stock alerts, pending orders, operational activity |
+| User Management | Role-based access for Owner, Admin, Salesman, Production, and Accountant |
+| Customer Management | Customer profiles, GST details, addresses, credit terms, order history |
+| Sales Orders | Order creation, approval, pricing, discounts, partial fulfilment |
+| Procurement | Supplier management, purchase orders, goods receipt, material batches |
+| Inventory | Raw materials, packaging, finished goods, stock ledger, expiry alerts |
+| Recipe & BOM | Material requirements, recipe configuration, estimated production cost |
+| Production | Production runs, material consumption, yield, wastage, costing |
+| Batch DNA | End-to-end raw material to finished product traceability |
+| Production Analytics | Planned vs actual consumption, yield variance, cost per packet |
+| GST Invoicing | Tax calculations, invoice generation, payment tracking |
+| Dispatch | Batch allocation, delivery status, partial dispatch, backorders |
+| Payments | Collections, outstanding balances, overdue tracking |
+| Reports | Inventory, production, sales, costing, GST, and financial reports |
+| Audit Trail | User actions, timestamps, changes, and source references |
+| Offline Support | Local drafts, queued transactions, synchronization, retry handling |
+
+---
+
+## Batch DNA — Complete Product Traceability
+
+**Batch DNA is the traceability core of GRAINTRACE.**
+
+It connects every stage of a product's manufacturing journey.
+
+```text
+SUPPLIER
+   |
+   v
+PURCHASE ORDER
+   |
+   v
+RAW MATERIAL LOTS
+   |
+   v
+INVENTORY MOVEMENTS
+   |
+   v
+RECIPE / BILL OF MATERIALS
+   |
+   v
+PRODUCTION RUN
+   |
+   v
+MATERIAL CONSUMPTION
+   |
+   v
+YIELD & COST ANALYSIS
+   |
+   v
+FINISHED GOODS BATCH
+   |
+   v
+DISPATCH & INVOICE
+   |
+   v
+CUSTOMER
+```
+
+### What makes it valuable?
+
+- Trace finished products back to their original suppliers.
+- Identify the raw material lots used in production.
+- Track material consumption and production yield.
+- Investigate wastage and production variances.
+- Trace affected finished batches to their customers.
+- Navigate forward and backward through the product lifecycle.
+
+**Every packet has a production history. Every material has an accountable destination.**
+
+---
+
+## Technology Stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | Next.js 14 App Router |
+| Language | TypeScript |
+| Styling | Tailwind CSS |
+| UI Components | shadcn/ui |
+| Animations | Framer Motion |
+| Charts | Recharts |
+| Database | SQLite |
+| ORM | Drizzle ORM |
+| Validation | Zod |
+| Testing | Vitest |
+| Excel Reports | ExcelJS |
+| PDF Documents | @react-pdf/renderer |
+| Offline Storage | IndexedDB |
+| Application Type | Progressive Web App |
+
+---
+
+## System Architecture
+
+```mermaid
+flowchart TD
+    A[Users] --> B[Next.js Application]
+    B --> C[Authentication & Authorization]
+    B --> D[Application Modules]
+    D --> E[Business Logic Layer]
+    E --> F[Zod Validation]
+    F --> G[Drizzle ORM]
+    G --> H[(SQLite Database)]
+
+    D --> I[Inventory Ledger]
+    D --> J[Production Engine]
+    D --> K[Batch DNA]
+    D --> L[Reports & Analytics]
+
+    B --> M[Offline Storage]
+    M --> N[Sync Queue]
+    N --> B
+```
+
+---
+
+## Engineering Principles
+
+GRAINTRACE is designed around data integrity and manufacturing accountability.
+
+- **Ledger-based inventory:** Stock balances are derived from recorded movements.
+- **Traceable transactions:** Every stock movement references its source.
+- **Accurate costing:** Monetary values are stored in integer paise.
+- **Reliable production:** Planned and actual consumption are compared.
+- **Controlled fulfilment:** Negative stock and duplicate posting are prevented.
+- **GST accuracy:** Tax calculations distinguish intra-state and inter-state transactions.
+- **Auditability:** Important changes retain user and timestamp information.
+- **Offline resilience:** Queued transactions are designed for safe synchronization.
+
+---
+
+## Benchmark & Validation
+
+The prototype includes a defined manufacturing benchmark to validate its business logic.
+
+| Validation Item | Expected Result |
+|---|---:|
+| Flour closing stock | 120 kg |
+| Oil closing stock | 19.5 L |
+| Pouches closing stock | 306 |
+| Cartons closing stock | 21 |
+| Spice closing stock | 3.8 kg |
+| Finished goods after production | 238 packets |
+| Finished goods after Retailer A dispatch | 88 packets |
+| Yield variance | -6% |
+| Oil consumption variance | +5% |
+| Retailer A taxable invoice | ₹7,500 |
+| CGST | ₹187.50 |
+| SGST | ₹187.50 |
+| Invoice total | ₹7,875 |
+| Payment received | ₹4,000 |
+| Outstanding amount | ₹3,875 |
+| Distributor B shortage | 32 packets |
+
+*These are benchmark targets, not a claim that every result has already been implemented or verified. Actual completion should be reported after running the benchmark tests.*
+
+---
+
+## Screenshots & Product Preview
+
+Add actual application screenshots here as development progresses.
+
+| Factory Dashboard | Inventory Management |
+|---|---|
+| <!-- Add dashboard screenshot --> | <!-- Add inventory screenshot --> |
+
+| Production Management | Batch DNA Traceability |
+|---|---|
+| <!-- Add production screenshot --> | <!-- Add Batch DNA screenshot --> |
+
+| Sales & Invoicing | Reports & Analytics |
+|---|---|
+| <!-- Add sales screenshot --> | <!-- Add reports screenshot --> |
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js
+- npm
 - Git
-- Docker with Compose, only for the optional container path below
 
-## Exact setup instructions
+### 1. Clone the repository
 
-From PowerShell, in the folder that contains this repository:
+```bash
+git clone YOUR_REPOSITORY_URL
+cd graintrace
+```
 
-```powershell
-cd nit_internship
+### 2. Install dependencies
+
+```bash
 npm install
-Copy-Item .env.example .env
-npm run db:migrate
-npm run db:seed
+```
+
+### 3. Configure environment variables
+
+Create a `.env` file using the environment variables required by the application.
+
+### 4. Initialize the database
+
+Run the project's configured Drizzle migration and seed commands.
+
+```bash
+npx drizzle-kit migrate
+```
+
+### 5. Start the development server
+
+```bash
 npm run dev
 ```
 
-Then open `http://localhost:3000`.
-
-All Drizzle migrations are committed, so `npm run db:generate` is not required for a fresh setup. `npm run db:seed` creates the demo factory, roles, six demo users, and baseline master data; it is deterministic and safe to rerun. Run generation only after changing `src/lib/db/schema.ts`:
-
-```powershell
-npm run db:generate
-npm run db:migrate
-```
-
-To inspect the local SQLite database:
-
-```powershell
-npm run db:studio
-```
-
-### Optional Docker path
-
-The repository includes a production Dockerfile, `.dockerignore`, and `docker-compose.yml`. The container applies migrations, runs the deterministic seed, and starts the built app with SQLite persisted in the `graintrace-data` volume:
-
-```powershell
-docker compose up --build
-```
-
-Then open `http://localhost:3000`. Stop it with `docker compose down`; add `-v` to remove the persisted database volume. The Docker CLI was unavailable in the Phase 9 audit environment, so the image was authored but not built or run locally.
-
-## Scripts
-
-| Command | Purpose |
-| --- | --- |
-| `npm run dev` | Start the Next.js development server. |
-| `npm run build` | Create a production build. |
-| `npm run start` | Serve the production build. |
-| `npm run lint` | Run Next.js ESLint checks. |
-| `npm run typecheck` | Run TypeScript without emitting files. |
-| `npm test` | Run the Vitest suite once. |
-| `npm run test:watch` | Run Vitest in watch mode. |
-| `npm run verify:responsive` | Check required breakpoints and console errors against a running server on port 3100. |
-| `npm run db:generate` | Generate a SQL migration from the Drizzle schema. |
-| `npm run db:migrate` | Apply committed migrations to SQLite. |
-| `npm run db:seed` | Seed deterministic demo users and baseline master data. |
-| `npm run db:studio` | Open Drizzle Studio. |
-| `npm run verify` | Run typecheck, lint, tests, and production build in sequence. |
-
-## Routes
-
-| Route | Status |
-| --- | --- |
-| `/login` | Standalone role-aware sign-in console |
-| `/session-expired` | Expired or revoked session state |
-| `/` | Protected factory overview with preview data |
-| `/orders` | Live salesman console, approval control, and order tracking workspace |
-| `/purchases` | Live purchase order, goods receipt, and supplier workflow |
-| `/inventory` | Live stock, batch, movement, alert, and adjustment workspace |
-| `/recipes` | Planned route shell |
-| `/production` | Live production planning, consumption, yield, posting, and cost workspace |
-| `/finished-goods` | Planned route shell |
-| `/invoices` | Live GST invoice, PDF, and credit-note workspace |
-| `/dispatch` | Live fulfilment planning and dispatch workspace |
-| `/collections` | Live receipt, correction, aging, and outstanding-invoice workspace |
-| `/reports` | Live ten-report workspace with CSV, Excel, and PDF exports |
-| `/audit` | Live audit explorer and source-to-transaction auditor trail |
-| `/batch-dna` | Live source-to-customer traceability instrument |
-| `/offline` | Public service-worker fallback with local queue and cached reference counts |
-| `/unauthorized` | Role-based access denied state |
-| `/api/auth/login` | Validates credentials and sets the httpOnly session cookie |
-| `/api/auth/logout` | Revokes the session on the server and clears the cookie |
-| `/api/purchases/*` | Server-authorized supplier, purchase order, status, and goods receipt APIs |
-| `/api/inventory/*` | Server-authorized stock query, detail, overview, and adjustment APIs |
-| `/api/production/*` | Server-authorized production run, planning, completion, posting, overview, and option APIs |
-| `/api/batch-dna/*` | Server-authorized batch trace index and detail APIs |
-| `/api/sales/*` | Server-authorized customer, sales order, option, and status APIs |
-| `/api/dispatch/*` | Server-authorized fulfilment plan, dispatch, detail, and status APIs |
-| `/api/invoices/*` | Server-authorized invoice, PDF, cancellation, option, and candidate APIs |
-| `/api/payments/*` | Server-authorized receipt, correction, collection, and dashboard APIs |
-| `/api/reports/*` | Server-authorized report query and CSV/Excel/PDF export APIs |
-| `/api/audit/*` | Server-authorized audit entry and auditor trail APIs |
-
-All application routes except `/login`, `/session-expired`, `/offline`, the authentication APIs, and the root not-found state require a valid server-validated session. The public offline fallback displays only local queue and cached reference metadata. Purchases, inventory, production, Batch DNA, sales orders, dispatch, invoices, collections, reports, and audit read and write through server-side workflow services; the remaining route shells state their status without simulating workflows.
-
-## Demo accounts
-
-Run `npm run db:seed` before signing in. The sign-in console can fill these credentials with one click.
-
-| Role | Email | Password | Landing view |
-| --- | --- | --- | --- |
-| Owner | `owner@graintrace.local` | `Owner!2026` | `/` |
-| Admin | `admin@graintrace.local` | `Admin!2026` | `/` |
-| Salesman | `salesman@graintrace.local` | `Sales!2026` | `/orders` |
-| Production | `production@graintrace.local` | `Production!2026` | `/production` |
-| Accountant | `accountant@graintrace.local` | `Accounts!2026` | `/invoices` |
-| Auditor | `auditor@graintrace.local` | `Auditor!2026` | `/audit` |
-
-Passwords are stored as bcrypt hashes. Sessions store only a SHA-256 hash of the random session token, expire after twelve hours, and are revoked on sign-out. The full permission matrix is documented in `docs/ARCHITECTURE.md`.
-
-## Project structure
+Open:
 
 ```text
-docs/                   Source brief, requirements, plan, architecture, design system
-drizzle/                Generated SQL migrations
-public/                 PWA manifest, icon, service worker
-scripts/                Seed and responsive verification runners
-src/app/                App Router pages, auth APIs, and global styles
-src/components/layout/  Application shell, navigation, and user menu
-src/components/overview/ Factory overview sections
-src/components/purchases/ Live purchasing workspace
-src/components/inventory/ Live inventory workspace
-src/components/production/ Live production workspace
-src/components/sales/    Salesman console and sales workflow workspaces
-src/components/reports/  Report catalog, filters, table, and export workspace
-src/components/audit/    Audit search, event inspector, and auditor trail workspace
-src/components/system/  System-level client components
-src/components/ui/      Reusable shadcn-style primitives
-src/domain/             Pure money, unit, inventory, costing, production, tax, invoice, payment, and order rules
-src/lib/auth/           Password hashing, sessions, permissions, and login service
-src/lib/data/           Zod-validated preview snapshot
-src/lib/db/             Drizzle schema, connection, migrations, and seed
-src/lib/domain/         Preview schema and inferred types
-src/lib/offline/        IndexedDB mutation queue
-src/lib/workflows/      Transactional purchasing, inventory, production, sales, dispatch, invoice, payment, report, and audit services
-src/lib/exports/        CSV, Excel, and PDF report renderers
-src/lib/format.ts       Presentation helpers
-src/lib/navigation.ts   Route registry
-src/tests/              Vitest setup and suites
+http://localhost:3000
 ```
 
-## Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, Phase 7, Phase 8, and Phase 9 scope
+### 6. Run tests
 
-Implemented:
-
-- Next.js 14 App Router, TypeScript, Tailwind, shadcn/ui conventions, Framer Motion, Recharts.
-- SQLite, Drizzle ORM, Zod, Vitest, ExcelJS, and `@react-pdf/renderer`.
-- Design tokens, Geist typography, and monospaced technical data treatment.
-- Responsive navigation, application shell, and factory overview.
-- Loading, empty, error, not-found, and offline states.
-- Explicit route structure for all eleven material-journey stages.
-- PWA manifest, service worker shell cache, and native IndexedDB mutation queue.
-- Reusable UI primitives and a Zod-validated preview dataset.
-- Thirty-eight-table normalized Drizzle schema with foreign keys, indexes, checks, timestamps, integer money, integer quantities, and append-only stock movement keys.
-- SQLite migrations, deterministic seed, six role-based demo accounts, and bcrypt password hashing.
-- Expiring database-backed sessions with hashed tokens, httpOnly cookies, and server-side revocation.
-- Role permission matrix, protected layouts and routes, role-filtered navigation, and role-specific landing views.
-- Standalone sign-in, unauthorized, session-expired, operating profile, and confirmed sign-out experiences.
-- Server-side Zod validation for credentials and route references; no client role or user ID is trusted.
-- Pure domain rules for integer money, exact unit conversion, append-only stock, weighted average costing, production variance, GST, invoices, payments, and partial fulfilment.
-- Deterministic Phase 3 benchmark fixture, acceptance tests, and report in `docs/BENCHMARK.md`.
-- Transactional supplier, purchase order, approval-state, and goods receipt workflows with duplicate and over-receipt guards.
-- Batch-linked stock receipts with lot code, expiry, damaged/rejected quantities, unit cost, audit events, and append-only ledger entries.
-- Live inventory table, low-stock and expiry alerts, batch detail, movement timeline, adjustment history, and reason-coded adjustments.
-- Server-side role authorization on pages and APIs; purchase posting, inventory adjustment, and production posting permissions are separate.
-- Production runs with draft, planned, in-progress, completed, and posted states, batch planning, actual consumption, damaged output, yield variance, and atomic cost snapshot posting.
-- Ledger-backed production posting that links material consumption, material damage, finished-good receipt, and output damage to one immutable run reference.
-- Live production analytics for planned versus actual output, yield variance, exceptions, labour, overhead, and cost per packet.
-- Real Batch DNA tracing from purchase sources and material lots through recipe, ledger, production, finished goods, dispatch, invoice, and customer evidence.
-- Customer master records with GST, address, credit terms, credit limit, and blocked status.
-- Sales orders with draft, submitted, approved, partially fulfilled, fulfilled, rejected, and cancelled states, with approval separated from creation.
-- Live salesman mobile console with guided entry, live calculations, order detail, durable local drafts, queued submissions, retry controls, and visible sync states.
-- Installable PWA with PNG icons, global registration, static-only service worker caching, and a public offline fallback that never stores authenticated pages or API data.
-- IndexedDB v2 order queue with legacy migration, unique idempotency keys, retry metadata, cached reference options, and an idempotent, permission-checked `/api/sales/sync` endpoint.
-- FEFO packet allocation, partial dispatch, backorders, and append-only finished-goods dispatch postings.
-- April-March document numbering for dispatch, invoices, credit notes, and receipts.
-- GST invoices from dispatched packets, multi-HSN support, printable PDFs, and full reversal credit notes.
-- Numbered receipts, outstanding tracking, payment posting, and overpayment prevention.
-- Server-authorized sales, dispatch, invoice, and collection APIs plus live tracking workspaces.
-- Signed payment corrections that post reversing receipt rows, mark the original as corrected, recalculate invoice balances, and append a reason-coded audit event.
-- Collections dashboard with aging buckets, customer exposure, corrected receipts, and duplicate reference protection.
-- Ten live reports covering sales, GST, collections, receivables aging, inventory value, production variance, purchases, customer ledger, product profitability, and stock movements.
-- Server-filtered CSV, Excel, and PDF report exports using the same workflows and integer-paise domain calculations as the on-screen reports.
-- Filterable audit explorer, event before/after inspector, auditor role, and source-to-transaction trails for invoices and batches.
-- Single ledger-authoritative balance posting, immutable stock movement keys, audited dispatch/invoice reversals, and corrected finance report signs and margins.
-- Recoverable offline sync states, adaptive queue indexes, truthful offline fallback content, and service worker install resilience.
-- Docker production configuration plus final audit, benchmark result, and clean-database verification evidence.
-
-Not implemented:
-
-- Workflows outside purchases, inventory, production, Batch DNA, sales-to-collection, finance reporting, and audit, such as recipes and finished goods.
-- Offline mutation support beyond optimized salesman order entry; other workflows remain server-connected by design.
-- Upstream security advisories affecting the mandated Next.js 14 line and a transitive ExcelJS dependency; fixes require stack changes that were not authorized in Phase 1.
-
-## Verification
-
-```powershell
-npm run verify
+```bash
+npm run test
 ```
 
-The latest verified run passed typecheck, lint, 49 tests, and the production build. The clean-database benchmark evidence is recorded in `docs/BENCHMARK_RESULTS.md`, and the complete defect/evidence audit is recorded in `docs/FINAL_AUDIT.md`.
+### 7. Create a production build
 
-Responsive behavior is checked at 375px, 768px, 1024px, and 1440px with `npm run verify:responsive` while a server is running on port 3100. The script signs in with the seeded Owner and Salesman accounts, checks the mobile offline console, verifies PWA assets and the public fallback, then checks protected routes:
-
-```powershell
-$env:BASE_URL = "http://localhost:3100"
-npx next start -p 3100
+```bash
+npm run build
 ```
 
-In a second terminal:
+*Check the actual package scripts and environment requirements in the repository before running these commands.*
 
-```powershell
-npm run verify:responsive
-```
+---
 
-## Documentation
+## Development Roadmap
 
-- `docs/PROBLEM.md` — preserved source brief
-- `docs/REQUIREMENTS.md` — complete requirement trace
-- `docs/IMPLEMENTATION_PLAN.md` — phase plan and exact next phase
-- `docs/ARCHITECTURE.md` — technical architecture and decisions
-- `docs/BENCHMARK.md` — Phase 3 deterministic calculation report
-- `docs/BENCHMARK_RESULTS.md` — Phase 9 clean-database benchmark verification
-- `docs/FINAL_AUDIT.md` — Phase 9 final engineering audit and evidence
-- `docs/DESIGN_SYSTEM.md` — visual and interaction system
+- [ ] Foundation and design system
+- [ ] Database architecture and authentication
+- [ ] Core business logic and benchmark validation
+- [ ] Procurement and inventory management
+- [ ] Production management and Batch DNA
+- [ ] Sales orders, GST invoicing, and dispatch
+- [ ] Payments, reports, and audit trail
+- [ ] Offline support and PWA capabilities
+- [ ] Engineering and security validation
+- [ ] UI refinement and responsive optimization
+- [ ] Final demonstration preparation
 
-## Git
+---
 
-Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, Phase 7, Phase 8, and Phase 9 are committed checkpoints. Do not commit secrets or local database files. Demo passwords are documentation-only credentials for local evaluation.
+## Future Scope
+
+- Advanced manufacturing analytics.
+- Predictive inventory planning.
+- Supplier performance insights.
+- Automated production recommendations.
+- Enhanced mobile-first factory workflows.
+- Multi-factory support.
+- Advanced traceability and quality-control integrations.
+
+---
+
+## Why GRAINTRACE?
+
+Traditional manufacturing records tell businesses what happened.
+
+**GRAINTRACE aims to show how it happened, why it happened, what it cost, and where every material went.**
+
+It transforms disconnected manufacturing activities into a connected and accountable operational workflow.
+
+---
+
+## Project Information
+
+| Detail | Description |
+|---|---|
+| Project | GRAINTRACE |
+| Category | Manufacturing Management & Traceability |
+| Domain | Food Manufacturing |
+| Application | Web Application / PWA |
+| Architecture | Full-stack |
+| Development Status | Prototype |
+| Primary Focus | Operational Visibility & Accountability |
+
+---
+
+<p align="center">
+  <strong>GRAINTRACE</strong><br/>
+  Every packet produced. Every gram accounted for.
+  <br/><br/>
+  <sub>Built to bring clarity, control, and accountability to manufacturing.</sub>
+</p>
