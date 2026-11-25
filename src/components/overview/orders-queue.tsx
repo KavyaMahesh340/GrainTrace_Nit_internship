@@ -7,18 +7,18 @@ export function OrdersQueue({ orders }: { orders: PreviewSnapshot["orders"] }) {
   return (
     <section className="border-b border-obsidian/15 lg:grid lg:grid-cols-12">
       <div className="px-5 py-10 sm:px-8 lg:col-span-4 lg:border-r lg:border-obsidian/15 lg:py-12 lg:pl-8 lg:pr-10">
-        <p className="mono-label text-rust">03 / Orders awaiting action</p>
+        <p className="mono-label text-rust-ink">03 / Orders awaiting action</p>
         <h2 className="mt-4 text-2xl font-semibold leading-tight tracking-tight sm:text-3xl">
           Decisions, not a backlog count.
         </h2>
-        <p className="mt-5 max-w-sm text-xs leading-6 text-obsidian/55">
+        <p className="mt-5 max-w-sm text-xs leading-6 text-ink-muted">
           Each reference opens its module route with the preview reference preserved in the URL.
         </p>
       </div>
-      <div className="overflow-x-auto lg:col-span-8">
+      <div className="table-scroll lg:col-span-8" role="region" aria-label="Orders awaiting action, horizontally scrollable" tabIndex={0}>
         <table className="w-full min-w-[680px] border-collapse text-left">
           <thead>
-            <tr className="mono-label text-machine">
+            <tr className="mono-label text-ink-muted">
               <th scope="col" className="px-5 py-4 font-medium sm:px-8 lg:px-6">Order</th>
               <th scope="col" className="px-3 py-4 font-medium">Customer</th>
               <th scope="col" className="px-3 py-4 font-medium">Qty</th>
@@ -29,7 +29,7 @@ export function OrdersQueue({ orders }: { orders: PreviewSnapshot["orders"] }) {
           </thead>
           <tbody>
             {orders.map((order) => (
-              <tr key={order.id} className="border-t border-obsidian/10 transition-colors hover:bg-sage/25">
+              <tr key={order.id} className="data-row">
                 <td className="px-5 py-5 sm:px-8 lg:px-6">
                   <Link
                     href={`/orders?focus=${order.id}`}
@@ -40,11 +40,11 @@ export function OrdersQueue({ orders }: { orders: PreviewSnapshot["orders"] }) {
                     ) : null}
                     {order.id}
                   </Link>
-                  <span className="mono-label mt-2 block text-machine">{order.state}</span>
+                  <span className="mono-label mt-2 block text-ink-muted">{order.state}</span>
                 </td>
                 <td className="px-3 py-5 text-sm">{order.customer}</td>
                 <td className="px-3 py-5 font-mono text-xs tabular">{formatQuantity(order.quantity)}</td>
-                <td className="px-3 py-5 font-mono text-xs text-machine tabular">{order.due}</td>
+                <td className="px-3 py-5 font-mono text-xs text-ink-muted tabular">{order.due}</td>
                 <td className="px-3 py-5 font-mono text-xs tabular">{formatCurrency(order.value)}</td>
                 <td className="px-5 py-5 text-right sm:px-8 lg:px-6">
                   <Link

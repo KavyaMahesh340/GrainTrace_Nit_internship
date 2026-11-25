@@ -14,10 +14,15 @@ import {
   RefreshCw,
   Search,
 } from "lucide-react";
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { MotionTabs } from "@/components/system/motion-tabs";
+import { Notice } from "@/components/system/notice";
+import { PageHeader } from "@/components/system/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { MetricGrid } from "@/components/ui/metric";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { TableFrame } from "@/components/ui/table-frame";
 import { formatPaise } from "@/domain";
 import type {
   ProductionOptions,
@@ -35,6 +40,11 @@ type Props = {
 };
 
 type View = "runs" | "analytics";
+
+const viewItems: readonly { value: View; label: string; hint?: string }[] = [
+  { value: "runs", label: "Run register", hint: "Feed + output" },
+  { value: "analytics", label: "Throughput", hint: "Yield + exceptions" },
+];
 
 const today = new Date().toISOString().slice(0, 10);
 
@@ -60,7 +70,7 @@ function fieldClass() {
 }
 
 function labelClass() {
-  return "mono-label mb-2 block text-machine";
+  return "mono-label mb-2 block text-ink-muted";
 }
 
 function formatNumber(value: number) {
@@ -284,36 +294,31 @@ export function ProductionWorkspace({ initialRuns, initialOverview, options, can
   const attention = runs.filter((run) => run.exceptionCount > 0);
 
   return (
-    <div className="min-h-screen bg-paper">
-      <div className="mx-auto max-w-[1600px] px-5 py-12 sm:px-8 sm:py-16">
-        <div className="grid gap-8 lg:grid-cols-12">
-          <div className="lg:col-span-8">
-            <p className="mono-label text-rust">Module 06 / Production</p>
-            <h1 className="mt-5 text-4xl font-semibold leading-none tracking-tightest sm:text-6xl">
-              Production runs
-            </h1>
-            <p className="mt-5 max-w-2xl text-sm leading-7 text-obsidian/60">
-              Plan against the live BOM, consume real batches, record yield and exceptions, then post an
-              atomic ledger and cost snapshot. Posted runs are sealed.
-            </p>
-          </div>
-          <div className="lg:col-span-4 lg:border-l lg:border-obsidian/15 lg:pl-8">
-            <div className="grid grid-cols-2 gap-px bg-obsidian/10">
-              <div className="bg-paper p-4">
-                <p className="mono-label text-machine">In progress</p>
-                <p className="mt-2 text-3xl font-semibold tabular">{overview.inProgress}</p>
+    <div>
+      <PageHeader
+        code="06 / Production"
+        title="Production runs"
+        description="Plan against the live BOM, consume real batches, record yield and exceptions, then post an atomic ledger and cost snapshot. Posted runs are sealed."
+        footnote="Plan · consume · record · post"
+        tone="instrument"
+        aside={
+          <div className="min-w-0">
+            <div className="grid grid-cols-2 gap-px border border-paper/15 bg-paper/15">
+              <div className="bg-forest p-4">
+                <p className="mono-label text-paper-muted">In progress</p>
+                <p className="mt-2 text-3xl font-semibold tabular text-paper">{overview.inProgress}</p>
               </div>
-              <div className="bg-paper p-4">
-                <p className="mono-label text-machine">Posted</p>
-                <p className="mt-2 text-3xl font-semibold tabular">{overview.posted}</p>
+              <div className="bg-forest p-4">
+                <p className="mono-label text-paper-muted">Posted</p>
+                <p className="mt-2 text-3xl font-semibold tabular text-paper">{overview.posted}</p>
               </div>
-              <div className="bg-paper p-4">
-                <p className="mono-label text-machine">Good packets</p>
-                <p className="mt-2 text-3xl font-semibold tabular">{formatNumber(overview.postedPackets)}</p>
+              <div className="bg-forest p-4">
+                <p className="mono-label text-paper-muted">Good packets</p>
+                <p className="mt-2 text-3xl font-semibold tabular text-paper">{formatNumber(overview.postedPackets)}</p>
               </div>
-              <div className="bg-paper p-4">
-                <p className="mono-label text-machine">Exceptions</p>
-                <p className="mt-2 text-3xl font-semibold tabular text-rust">{overview.exceptions}</p>
+              <div className="bg-forest p-4">
+                <p className="mono-label text-paper-muted">Exceptions</p>
+                <p className="mt-2 text-3xl font-semibold tabular text-rust-ink">{overview.exceptions}</p>
               </div>
             </div>
             {canManage ? (
@@ -323,22 +328,25 @@ export function ProductionWorkspace({ initialRuns, initialOverview, options, can
               </Button>
             ) : null}
           </div>
-        </div>
+        }
+      />
+
+      <div className="page-frame py-10 sm:py-14">
 
         {createOpen && canManage ? (
-          <section className="mt-10 border border-forest/25 bg-sage/20 p-5 sm:p-7">
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              <div>
-                <p className="mono-label text-machine">Create draft</p>
-                <h2 className="mt-2 text-xl font-semibold">Select product recipe and planned output</h2>
+          <section className="mt-10 border border-obsidian/20 bg-sage/20" aria-labelledby="production-create">
+            <div className="flex flex-wrap items-center justify-between gap-4 border-b border-obsidian/15 px-5 py-5 sm:px-7">
+              <div className="min-w-0">
+                <p className="mono-label text-rust-ink">01 / Create draft</p>
+                <h2 id="production-create" className="mt-2 text-xl font-semibold">Select product recipe and planned output</h2>
               </div>
               <Button disabled={busy} onClick={() => void createRun()}>
                 <Check className="h-4 w-4" aria-hidden="true" />
                 Create draft
               </Button>
             </div>
-            <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-              <label>
+            <div className="grid gap-4 p-5 sm:grid-cols-2 xl:grid-cols-5 sm:p-7">
+              <label className="min-w-0">
                 <span className={labelClass()}>Run number</span>
                 <Input
                   className={fieldClass()}
@@ -347,7 +355,7 @@ export function ProductionWorkspace({ initialRuns, initialOverview, options, can
                   placeholder="RUN-1001"
                 />
               </label>
-              <label className="sm:col-span-2">
+              <label className="min-w-0 sm:col-span-2">
                 <span className={labelClass()}>Active recipe</span>
                 <select
                   className={fieldClass()}
@@ -361,7 +369,7 @@ export function ProductionWorkspace({ initialRuns, initialOverview, options, can
                   ))}
                 </select>
               </label>
-              <label>
+              <label className="min-w-0">
                 <span className={labelClass()}>Planned packets</span>
                 <Input
                   className={fieldClass()}
@@ -373,7 +381,7 @@ export function ProductionWorkspace({ initialRuns, initialOverview, options, can
                   }
                 />
               </label>
-              <label>
+              <label className="min-w-0">
                 <span className={labelClass()}>Selling price / packet (paise)</span>
                 <Input
                   className={fieldClass()}
@@ -383,7 +391,7 @@ export function ProductionWorkspace({ initialRuns, initialOverview, options, can
                   onChange={(event) => setCreateDraft({ ...createDraft, sellingPricePaise: event.target.value })}
                 />
               </label>
-              <label className="sm:col-span-2 xl:col-span-5">
+              <label className="min-w-0 sm:col-span-2 xl:col-span-5">
                 <span className={labelClass()}>Notes</span>
                 <Input
                   className={fieldClass()}
@@ -395,33 +403,14 @@ export function ProductionWorkspace({ initialRuns, initialOverview, options, can
           </section>
         ) : null}
 
-        {error ? (
-          <div className="mt-8 border border-rust/40 bg-rust/10 px-4 py-3 text-sm text-rust">{error}</div>
-        ) : null}
-        {notice ? (
-          <div className="mt-8 border border-forest/40 bg-forest/10 px-4 py-3 text-sm text-forest">{notice}</div>
-        ) : null}
+        {error ? <Notice tone="error" className="mt-8">{error}</Notice> : null}
+        {notice ? <Notice tone="success" className="mt-8">{notice}</Notice> : null}
 
-        <div className="mt-12 flex flex-wrap items-center justify-between gap-4 border-b border-obsidian/15">
-          <div className="flex gap-6">
-            {(["runs", "analytics"] as View[]).map((item) => (
-              <button
-                key={item}
-                type="button"
-                onClick={() => setView(item)}
-                className={`border-b-2 pb-3 mono-label ${
-                  view === item
-                    ? "border-rust text-obsidian"
-                    : "border-transparent text-machine hover:text-obsidian"
-                }`}
-              >
-                {item}
-              </button>
-            ))}
-          </div>
-          <div className="flex w-full flex-col gap-3 pb-3 sm:w-auto sm:flex-row">
+        <div className="mt-12 flex flex-wrap items-end justify-between gap-4">
+          <MotionTabs label="Production views" value={view} onChange={setView} items={viewItems} />
+          <div className="flex w-full flex-col gap-3 border border-obsidian/15 bg-paper p-2 sm:w-auto sm:flex-row">
             <div className="relative sm:w-64">
-              <Search className="absolute left-3 top-3.5 h-4 w-4 text-machine" aria-hidden="true" />
+              <Search className="absolute left-3 top-3.5 h-4 w-4 text-ink-muted" aria-hidden="true" />
               <Input
                 aria-label="Search production runs"
                 className={`${fieldClass()} pl-9`}
@@ -447,23 +436,28 @@ export function ProductionWorkspace({ initialRuns, initialOverview, options, can
         </div>
 
         {view === "runs" ? (
-          <section className="mt-6 overflow-x-auto">
+          <TableFrame
+            className="mt-6"
+            title="Run register"
+            description="Planned output, yield variance, and sealed cost per packet"
+            actions={<span className="mono-caption text-ink-muted">{filteredRuns.length} runs in view</span>}
+          >
             <table className="w-full min-w-[1040px] border-collapse text-left text-sm">
-              <thead className="mono-label text-machine">
+              <thead className="mono-label text-ink-muted">
                 <tr className="border-b border-obsidian/15">
-                  <th className="py-3 pr-4 font-medium">Run</th>
-                  <th className="py-3 pr-4 font-medium">Product / recipe</th>
-                  <th className="py-3 pr-4 font-medium">Output</th>
-                  <th className="py-3 pr-4 font-medium">Yield</th>
-                  <th className="py-3 pr-4 font-medium">Cost / packet</th>
-                  <th className="py-3 pr-4 font-medium">Status</th>
-                  <th className="py-3 pr-4 text-right font-medium">Inspect</th>
+                  <th scope="col" className="py-3 pr-4 font-medium">Run</th>
+                  <th scope="col" className="py-3 pr-4 font-medium">Product / recipe</th>
+                  <th scope="col" className="py-3 pr-4 font-medium">Output</th>
+                  <th scope="col" className="py-3 pr-4 font-medium">Yield</th>
+                  <th scope="col" className="py-3 pr-4 font-medium">Cost / packet</th>
+                  <th scope="col" className="py-3 pr-4 font-medium">Status</th>
+                  <th scope="col" className="py-3 pr-4 text-right font-medium">Inspect</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredRuns.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="py-14 text-center text-obsidian/50">
+                    <td colSpan={7} className="py-14 text-center text-ink-muted">
                       No production runs match this view.
                     </td>
                   </tr>
@@ -474,24 +468,24 @@ export function ProductionWorkspace({ initialRuns, initialOverview, options, can
                         ? 0
                         : Math.min(100, Math.round((run.actualOutputPackets / run.plannedOutputPackets) * 100));
                     return (
-                      <tr key={run.id} className="border-b border-obsidian/10 align-top">
+                      <tr key={run.id} className="data-row align-top">
                         <td className="py-4 pr-4">
                           <p className="font-mono text-xs font-semibold">{run.runNumber}</p>
-                          <p className="mt-1 text-xs text-machine">{run.batchCode ?? "No batch yet"}</p>
+                          <p className="mt-1 text-xs text-ink-muted">{run.batchCode ?? "No batch yet"}</p>
                         </td>
                         <td className="py-4 pr-4">
                           <p>{run.productName}</p>
-                          <p className="mt-1 font-mono text-xs text-machine">
+                          <p className="mt-1 font-mono text-xs text-ink-muted">
                             {run.recipeCode} v{run.recipeVersion}
                           </p>
                         </td>
                         <td className="py-4 pr-4">
                           <div className="flex items-end gap-2 tabular">
                             <span className="text-lg font-semibold">{formatNumber(run.goodOutputPackets)}</span>
-                            <span className="text-xs text-machine">/ {formatNumber(run.plannedOutputPackets)}</span>
+                            <span className="text-xs text-ink-muted">/ {formatNumber(run.plannedOutputPackets)}</span>
                           </div>
                           <div
-                            className="mt-2 h-1 w-32 bg-obsidian/10"
+                            className="meter-track mt-2 w-32"
                             role="meter"
                             aria-valuemin={0}
                             aria-valuemax={100}
@@ -504,12 +498,12 @@ export function ProductionWorkspace({ initialRuns, initialOverview, options, can
                         <td className="py-4 pr-4 tabular">
                           <p>{run.yieldVarianceBasisPoints ?? 0} bps</p>
                           {run.exceptionCount > 0 ? (
-                            <p className="mt-1 flex items-center gap-1 text-xs text-rust">
+                            <p className="mt-1 flex items-center gap-1 text-xs text-rust-ink">
                               <AlertTriangle className="h-3 w-3" aria-hidden="true" />
                               {run.exceptionCount} exceptions
                             </p>
                           ) : (
-                            <p className="mt-1 text-xs text-machine">Within tolerance</p>
+                            <p className="mt-1 text-xs text-ink-muted">Within tolerance</p>
                           )}
                         </td>
                         <td className="py-4 pr-4 tabular">
@@ -530,14 +524,14 @@ export function ProductionWorkspace({ initialRuns, initialOverview, options, can
                 )}
               </tbody>
             </table>
-          </section>
+          </TableFrame>
         ) : (
-          <section className="mt-8 grid gap-8 lg:grid-cols-12">
-            <div className="lg:col-span-7">
-              <div className="border border-obsidian/15 p-6">
+          <section className="mt-10 grid gap-8 lg:grid-cols-12" aria-label="Production analytics">
+            <div className="min-w-0 lg:col-span-7">
+              <div className="border border-obsidian/15 p-5 sm:p-6">
                 <div className="flex items-center gap-2">
-                  <Activity className="h-4 w-4 text-rust" aria-hidden="true" />
-                  <p className="mono-label text-machine">Planned vs actual output</p>
+                  <Activity className="h-4 w-4 text-rust-ink" aria-hidden="true" />
+                  <p className="mono-label text-ink-muted">02 / Planned vs actual output</p>
                 </div>
                 <div className="mt-6 space-y-5">
                   {filteredRuns.slice(0, 8).map((run) => {
@@ -553,25 +547,23 @@ export function ProductionWorkspace({ initialRuns, initialOverview, options, can
                       <div key={run.id}>
                         <div className="flex items-center justify-between gap-4 text-xs">
                           <span className="font-mono">{run.runNumber}</span>
-                          <span className="tabular text-machine">
+                          <span className="tabular text-ink-muted">
                             {formatNumber(run.actualOutputPackets)} actual · {formatNumber(run.goodOutputPackets)} good
                           </span>
                         </div>
-                        <div className="mt-2 space-y-1">
-                          <div className="h-2 bg-obsidian/10">
-                            <div className="h-full bg-machine/40" style={{ width: `${actualPercent}%` }} />
-                          </div>
-                          <div className="h-2 bg-obsidian/10">
-                            <div className="h-full bg-forest" style={{ width: `${goodPercent}%` }} />
-                          </div>
+                        <div className="meter-track mt-2 h-2">
+                          <div className="h-full bg-machine" style={{ width: `${actualPercent}%` }} />
+                        </div>
+                        <div className="meter-track mt-1 h-2">
+                          <div className="h-full bg-forest" style={{ width: `${goodPercent}%` }} />
                         </div>
                       </div>
                     );
                   })}
                 </div>
-                <div className="mt-6 flex gap-5 mono-label text-machine">
+                <div className="mt-6 flex gap-5 mono-label text-ink-muted">
                   <span className="flex items-center gap-2">
-                    <span className="h-2 w-4 bg-machine/40" /> Actual
+                    <span className="h-2 w-4 bg-machine" /> Actual
                   </span>
                   <span className="flex items-center gap-2">
                     <span className="h-2 w-4 bg-forest" /> Good
@@ -579,28 +571,28 @@ export function ProductionWorkspace({ initialRuns, initialOverview, options, can
                 </div>
               </div>
             </div>
-            <div className="lg:col-span-5">
-              <div className="surface-dark p-6 text-paper">
-                <p className="mono-label text-paper/50">Exception watch</p>
-                <h2 className="mt-3 text-2xl font-semibold">{overview.exceptions} runs need review</h2>
+            <div className="min-w-0 lg:col-span-5">
+              <div className="surface-dark p-5 text-paper sm:p-6">
+                <p className="mono-label text-paper-muted">03 / Exception watch</p>
+                <h2 className="mt-3 text-2xl font-semibold text-balance">{overview.exceptions} runs need review</h2>
                 <div className="mt-6 space-y-3">
                   {attention.length === 0 ? (
-                    <p className="text-sm text-paper/60">No material or yield variance exceeds 3%.</p>
+                    <p className="text-sm text-paper-muted">No material or yield variance exceeds 3%.</p>
                   ) : (
                     attention.slice(0, 6).map((run) => (
                       <button
                         key={run.id}
                         type="button"
                         onClick={() => void openDetail(run.runNumber)}
-                        className="flex w-full items-center justify-between gap-4 border border-paper/15 px-4 py-3 text-left transition-colors hover:border-signal"
+                        className="flex w-full min-w-0 items-center justify-between gap-4 border border-paper/15 px-4 py-3 text-left transition-colors hover:border-signal"
                       >
-                        <span>
+                        <span className="min-w-0">
                           <span className="block font-mono text-xs">{run.runNumber}</span>
-                          <span className="mt-1 block text-xs text-paper/55">
+                          <span className="mt-1 block text-xs text-paper-muted">
                             {run.yieldVarianceBasisPoints ?? 0} bps yield
                           </span>
                         </span>
-                        <span className="mono-label text-rust">{run.exceptionCount} flags</span>
+                        <span className="mono-label shrink-0 text-rust-ink">{run.exceptionCount} flags</span>
                       </button>
                     ))
                   )}
@@ -614,7 +606,7 @@ export function ProductionWorkspace({ initialRuns, initialOverview, options, can
       <Sheet open={detailOpen} onOpenChange={setDetailOpen}>
         <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-3xl">
           {loading || !detail ? (
-            <div className="p-6 text-sm text-paper/60">Loading run evidence…</div>
+            <div className="p-6 text-sm text-paper-muted">Loading run evidence…</div>
           ) : (
             <>
               <SheetHeader className="border-b border-paper/10">
@@ -635,29 +627,26 @@ export function ProductionWorkspace({ initialRuns, initialOverview, options, can
               </SheetHeader>
 
               <div className="space-y-8 p-6">
-                <div className="grid grid-cols-2 gap-px bg-paper/10 sm:grid-cols-4">
-                  {[
-                    ["Planned", `${formatNumber(detail.plannedOutputPackets)} pkts`],
-                    ["Good", `${formatNumber(detail.goodOutputPackets)} pkts`],
-                    ["Damaged", `${formatNumber(detail.damagedOutputPackets)} pkts`],
-                    ["Yield", `${detail.yieldVarianceBasisPoints ?? 0} bps`],
-                  ].map(([label, value]) => (
-                    <div key={label} className="bg-obsidian p-4">
-                      <p className="mono-label text-paper/40">{label}</p>
-                      <p className="mt-2 text-lg font-semibold tabular">{value}</p>
-                    </div>
-                  ))}
-                </div>
+                <MetricGrid
+                  className="border border-paper/10"
+                  columns={4}
+                  items={[
+                    { label: "Planned", value: `${formatNumber(detail.plannedOutputPackets)} pkts`, tone: "dark" },
+                    { label: "Good", value: `${formatNumber(detail.goodOutputPackets)} pkts`, tone: "dark" },
+                    { label: "Damaged", value: `${formatNumber(detail.damagedOutputPackets)} pkts`, tone: "dark" },
+                    { label: "Yield", value: `${detail.yieldVarianceBasisPoints ?? 0} bps`, tone: "dark" },
+                  ]}
+                />
 
                 <section>
-                  <p className="mono-label text-paper/40">Material plan and actual consumption</p>
+                  <p className="mono-label text-paper-muted">01 / Material plan and actual consumption</p>
                   <div className="mt-4 space-y-3">
                     {detail.lines.map((line) => (
                       <div key={line.itemId} className="border border-paper/15 p-4">
                         <div className="flex flex-wrap items-center justify-between gap-3">
-                          <div>
+                          <div className="min-w-0">
                             <p className="font-medium text-paper">{line.materialName}</p>
-                            <p className="mt-1 font-mono text-[10px] text-paper/40">
+                            <p className="mt-1 font-mono text-[10px] text-paper-muted">
                               {line.materialCode} · {line.batchCode ?? "batch not assigned"}
                             </p>
                           </div>
@@ -665,7 +654,7 @@ export function ProductionWorkspace({ initialRuns, initialOverview, options, can
                             {line.varianceBasisPoints ?? 0} bps
                           </Badge>
                         </div>
-                        <div className="mt-4 grid grid-cols-3 gap-3 text-xs tabular text-paper/70">
+                        <div className="mt-4 grid grid-cols-3 gap-3 text-xs tabular text-paper-muted">
                           <p>Planned {formatNumber(line.plannedQuantity)}</p>
                           <p>Actual {formatNumber(line.actualQuantity + line.damagedQuantity)}</p>
                           <p>Damaged {formatNumber(line.damagedQuantity)}</p>
@@ -677,7 +666,7 @@ export function ProductionWorkspace({ initialRuns, initialOverview, options, can
 
                 {detail.snapshot ? (
                   <section className="border border-paper/15 p-5">
-                    <p className="mono-label text-paper/40">Sealed cost snapshot</p>
+                    <p className="mono-label text-paper-muted">02 / Sealed cost snapshot</p>
                     <div className="mt-4 grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
                       {[
                         ["Material", detail.snapshot.materialCostPaise],
@@ -685,8 +674,8 @@ export function ProductionWorkspace({ initialRuns, initialOverview, options, can
                         ["Overhead", detail.snapshot.overheadPaise],
                         ["Total", detail.snapshot.totalRunCostPaise],
                       ].map(([label, value]) => (
-                        <div key={String(label)}>
-                          <p className="text-paper/45">{label}</p>
+                        <div key={String(label)} className="min-w-0">
+                          <p className="text-paper-muted">{label}</p>
                           <p className="mt-1 font-medium tabular">{formatPaise(Number(value))}</p>
                         </div>
                       ))}
@@ -704,14 +693,14 @@ export function ProductionWorkspace({ initialRuns, initialOverview, options, can
                   <section className="border border-paper/15 p-5">
                     <div className="flex items-center gap-2">
                       <ClipboardList className="h-4 w-4 text-signal" aria-hidden="true" />
-                      <p className="mono-label text-paper/60">Plan source batches</p>
+                      <p className="mono-label text-paper-muted">03 / Plan source batches</p>
                     </div>
                     <div className="mt-5 space-y-3">
                       {detail.lines.map((line) => {
                         const material = options.materials.find((item) => item.itemId === line.itemId);
                         return (
-                          <label key={line.itemId} className="block">
-                            <span className="mono-label mb-2 block text-paper/45">
+                          <label key={line.itemId} className="block min-w-0">
+                            <span className="mono-label mb-2 block text-paper-muted">
                               {line.materialCode} · needs {formatNumber(line.plannedQuantity)}
                             </span>
                             <select
@@ -750,10 +739,10 @@ export function ProductionWorkspace({ initialRuns, initialOverview, options, can
 
                 {canManage && detail.status === "in_progress" ? (
                   <section className="border border-paper/15 p-5">
-                    <p className="mono-label text-paper/40">Record actual consumption and output</p>
+                    <p className="mono-label text-paper-muted">03 / Record actual consumption and output</p>
                     <div className="mt-5 grid gap-3 sm:grid-cols-2">
                       {detail.lines.map((line) => (
-                        <div key={line.itemId} className="border border-paper/10 p-3">
+                        <div key={line.itemId} className="min-w-0 border border-paper/10 p-3">
                           <p className="text-xs font-medium">{line.materialName}</p>
                           <div className="mt-3 grid grid-cols-2 gap-2">
                             <Input
@@ -836,8 +825,8 @@ export function ProductionWorkspace({ initialRuns, initialOverview, options, can
 
                 {canManage && detail.status === "completed" ? (
                   <section className="border border-signal/30 p-5">
-                    <p className="mono-label text-signal">Post production</p>
-                    <p className="mt-3 text-sm text-paper/65">
+                    <p className="mono-label text-signal">04 / Post production</p>
+                    <p className="mt-3 text-sm text-paper-muted">
                       Posting atomically deducts materials, writes damaged output separately, adds finished
                       goods, and seals the cost snapshot.
                     </p>
@@ -863,18 +852,18 @@ export function ProductionWorkspace({ initialRuns, initialOverview, options, can
                 ) : null}
 
                 {detail.status === "posted" ? (
-                  <p className="border border-paper/15 p-4 text-sm text-paper/60">
+                  <p className="border border-paper/15 p-4 text-sm text-paper-muted">
                     This run is posted and cannot be edited. Corrections must use inventory adjustments.
                   </p>
                 ) : null}
 
                 <section>
-                  <p className="mono-label text-paper/40">Audit trail</p>
+                  <p className="mono-label text-paper-muted">05 / Audit trail</p>
                   <div className="mt-4 space-y-2">
                     {detail.audit.map((event) => (
                       <div key={event.id} className="flex flex-wrap items-center justify-between gap-2 border-b border-paper/10 pb-2 text-xs">
-                        <span className="font-mono">{event.action}</span>
-                        <span className="text-paper/45">{event.createdAt}</span>
+                        <span className="min-w-0 font-mono">{event.action}</span>
+                        <span className="shrink-0 text-paper-muted">{event.createdAt}</span>
                       </div>
                     ))}
                   </div>

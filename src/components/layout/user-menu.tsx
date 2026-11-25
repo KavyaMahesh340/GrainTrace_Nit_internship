@@ -56,23 +56,23 @@ export function UserMenu({ user }: { user: SessionUser }) {
         </SheetHeader>
         <div className="flex-1 overflow-y-auto px-6 pb-8">
           <div className="border-b border-paper/10 py-7">
-            <p className="mono-label text-paper/40">Signed in as</p>
+            <p className="mono-label text-paper-muted">Signed in as</p>
             <p className="mt-3 text-2xl font-semibold tracking-tightest">{user.fullName}</p>
-            <p className="mt-2 font-mono text-xs text-paper/60">{user.email}</p>
+            <p className="mt-2 font-mono text-xs text-paper-muted">{user.email}</p>
           </div>
           <dl className="grid grid-cols-2 gap-y-5 border-b border-paper/10 py-7">
-            <dt className="mono-label text-paper/40">Role</dt>
+            <dt className="mono-label text-paper-muted">Role</dt>
             <dd className="text-right font-mono text-xs text-signal">{user.roleLabel}</dd>
-            <dt className="mono-label text-paper/40">Landing view</dt>
-            <dd className="text-right font-mono text-xs text-paper/70">{user.landingPath}</dd>
-            <dt className="mono-label text-paper/40">Permissions</dt>
-            <dd className="text-right font-mono text-xs text-paper/70 tabular">
+            <dt className="mono-label text-paper-muted">Landing view</dt>
+            <dd className="text-right font-mono text-xs text-paper-muted">{user.landingPath}</dd>
+            <dt className="mono-label text-paper-muted">Permissions</dt>
+            <dd className="text-right font-mono text-xs text-paper-muted tabular">
               {user.permissions.length}
             </dd>
           </dl>
           <div className="py-7">
-            <p className="mono-label text-paper/40">End session</p>
-            <p className="mt-3 text-sm leading-7 text-paper/65">
+            <p className="mono-label text-paper-muted">End session</p>
+            <p className="mt-3 text-sm leading-7 text-paper-muted">
               Signing out revokes this session on the server and closes the operating console.
             </p>
             {error ? (

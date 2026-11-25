@@ -3,22 +3,31 @@ import { ArrowUpRight } from "lucide-react";
 
 export function SiteFooter() {
   return (
-    <footer className="surface-dark mt-auto border-t border-paper/10 bg-obsidian text-paper">
-      <div className="mx-auto flex max-w-[1600px] flex-col gap-4 px-5 py-8 sm:flex-row sm:items-end sm:justify-between sm:px-8">
-        <div>
-          <p className="mono-label text-paper/40">GRAINTRACE / PHASE 8 OFFLINE FIELD OPERATIONS</p>
-          <p className="mt-2 max-w-lg text-xs leading-6 text-paper/50">
-            Sales orders survive network loss in a durable local queue with idempotent server sync.
-            Finance, reporting, production, and traceability workflows remain ledger-backed.
+    <footer className="surface-dark mt-auto border-t border-paper/15 bg-obsidian text-paper">
+      <div className="page-frame grid gap-8 py-10 md:grid-cols-12 md:py-12">
+        <div className="md:col-span-8">
+          <div className="flex items-center gap-3">
+            <span className="h-0.5 w-10 bg-signal" aria-hidden="true" />
+            <p className="mono-label text-paper-muted">GRAINTRACE / FIELD OPERATIONS</p>
+          </div>
+          <p className="mt-4 max-w-2xl text-sm leading-7 text-paper-muted">
+            Ledger-backed grain operations: inventory, production, traceability, sales, finance, and audit
+            on one continuous material record.
           </p>
         </div>
-        <Link
-          href="/batch-dna"
-          className="group flex items-center gap-2 font-mono text-[10px] uppercase tracking-label text-signal"
-        >
-          Explore live Batch DNA
-          <ArrowUpRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" aria-hidden="true" />
-        </Link>
+        <div className="md:col-span-4 md:border-l md:border-paper/15 md:pl-8">
+          <p className="mono-label text-paper-muted">Traceability index</p>
+          <Link
+            href="/batch-dna"
+            className="group mt-4 flex items-center justify-between gap-4 border-b border-paper/20 pb-3 font-mono text-xs uppercase tracking-[0.12em] text-signal"
+          >
+            Open live Batch DNA
+            <ArrowUpRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" aria-hidden="true" />
+          </Link>
+          <p className="mt-4 font-mono text-[10px] uppercase tracking-label text-paper-muted">
+            Every packet produced. Every gram accounted for.
+          </p>
+        </div>
       </div>
     </footer>
   );

@@ -4,15 +4,15 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-sm text-xs font-medium transition-colors disabled:pointer-events-none disabled:opacity-50",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-sm text-xs font-medium transition-[background-color,border-color,color,box-shadow] duration-150 ease-instrument focus-visible:ring-2 focus-visible:ring-forest/40 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-45",
   {
     variants: {
       variant: {
-        default: "bg-signal text-obsidian hover:bg-[#d8ff8d]",
+        default: "bg-signal text-obsidian hover:bg-signal/85",
         dark: "bg-obsidian text-paper hover:bg-forest",
-        outline: "border border-obsidian/25 bg-transparent text-obsidian hover:bg-obsidian/5",
-        light: "border border-paper/25 bg-transparent text-paper hover:bg-paper/10",
-        ghost: "text-obsidian hover:bg-obsidian/5",
+        outline: "border border-obsidian/30 bg-transparent text-obsidian hover:border-obsidian hover:bg-sage/40",
+        light: "border border-paper/35 bg-transparent text-paper hover:border-paper/70 hover:bg-paper/10",
+        ghost: "text-obsidian hover:bg-sage/50",
       },
       size: {
         default: "h-10 px-4",

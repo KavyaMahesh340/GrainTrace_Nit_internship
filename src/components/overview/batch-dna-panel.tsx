@@ -30,17 +30,18 @@ export function BatchDnaPanel({ dna, expanded = false }: BatchDnaPanelProps) {
             <h2 className="mt-4 text-2xl font-semibold leading-tight tracking-tight sm:text-4xl">
               {expanded ? "The trace map begins with a batch." : "Trace the material, not the story."}
             </h2>
-            <p className="mt-5 max-w-sm text-xs leading-6 text-paper/55 sm:text-sm">
-              The live signature view connects raw material sources, production steps, finished
-              goods, and delivery evidence from real records.
+            <p className="mt-5 max-w-sm text-xs leading-6 text-paper-muted sm:text-sm">
+              {expanded
+                ? "The live signature view connects raw material sources, production steps, finished goods, and delivery evidence from real records."
+                : "This preview signature view shows the shape of a trace record. Open Batch DNA for live evidence."}
             </p>
           </div>
           <div className="lg:col-span-8">
             <div className="flex flex-wrap items-baseline justify-between gap-3 border-b border-paper/15 pb-4">
               <span className="font-mono text-sm font-medium text-signal">{dna.batchCode}</span>
-              <span className="mono-label text-paper/45">{dna.evidence}</span>
+              <span className="mono-label text-paper-muted">{dna.evidence}</span>
             </div>
-            <p className="mono-label mt-4 text-paper/40">{dna.product}</p>
+            <p className="mono-label mt-4 text-paper-muted">{dna.product}</p>
             <div className="relative mt-9">
               <div className="absolute inset-x-0 top-[13px] h-px bg-paper/20" aria-hidden="true" />
               <motion.div
@@ -62,14 +63,14 @@ export function BatchDnaPanel({ dna, expanded = false }: BatchDnaPanelProps) {
                       )}
                       aria-hidden="true"
                     />
-                    <p className="mono-label mt-4 truncate text-paper/45">{stage.label}</p>
+                    <p className="mono-label mt-4 truncate text-paper-muted">{stage.label}</p>
                     <p className="mt-1 truncate font-mono text-[11px] text-paper tabular">{stage.value}</p>
                   </li>
                 ))}
               </ol>
             </div>
             <div className="mt-9 flex flex-wrap items-center gap-x-8 gap-y-4 border-t border-paper/15 pt-5">
-              <p className="mono-label text-paper/45">
+              <p className="mono-label text-paper-muted">
                 Linked lots <span className="ml-2 text-sm text-paper tabular">{dna.linkedLots}</span>
               </p>
               {expanded ? (

@@ -23,25 +23,25 @@ export default async function FactoryOverviewPage() {
   return (
     <>
       <FactoryHeading factory={data.factory} generatedAt={data.generatedAt} />
-      <Reveal>
+      <Reveal delay={0.02}>
         <ProductionPulse pulse={data.pulse} />
       </Reveal>
-      <Reveal>
+      <Reveal delay={0.04}>
         <MaterialFlow flow={data.flow} />
       </Reveal>
-      <Reveal>
+      <Reveal delay={0.06}>
         <OrdersQueue orders={data.orders} />
       </Reveal>
-      <Reveal>
+      <Reveal delay={0.08}>
         <StockRisk stock={data.stock} />
       </Reveal>
-      <Reveal>
+      <Reveal delay={0.1}>
         <ExceptionsPanel exceptions={data.exceptions} />
       </Reveal>
-      <Reveal>
+      <Reveal delay={0.12}>
         <ActionArea focusId={data.orders[0].id} />
       </Reveal>
-      <Reveal>
+      <Reveal delay={0.14}>
         <ActivityLog activity={data.activity} />
       </Reveal>
       <BatchDnaPanel dna={data.dna} />

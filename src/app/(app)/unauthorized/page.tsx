@@ -10,7 +10,8 @@ export default function UnauthorizedPage() {
   const { user } = requireSession();
 
   return (
-    <div className="mx-auto max-w-[1600px] px-5 py-16 sm:px-8">
+    <div className="page-frame py-16">
+      <h1 className="sr-only">Access restricted</h1>
       <EmptyState
         code="403 / Access restricted"
         title="This module is outside your role."

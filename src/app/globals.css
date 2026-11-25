@@ -14,7 +14,7 @@
   --secondary: 90 11% 85%;
   --secondary-foreground: 120 6% 10%;
   --muted: 90 11% 85%;
-  --muted-foreground: 110 3% 40%;
+  --muted-foreground: 110 3% 32%;
   --accent: 84 85% 68%;
   --accent-foreground: 120 6% 10%;
   --destructive: 12 52% 51%;
@@ -22,6 +22,17 @@
   --border: 90 6% 76%;
   --input: 90 6% 76%;
   --ring: 150 26% 19%;
+  --ink: #171a18;
+  --paper: #f2f1eb;
+  --signal: #c8f169;
+  --machine: #888e87;
+  --rust: #c65d40;
+  --sage: #dadfd4;
+  --forest: #243d31;
+  --ink-muted: #4b534c;
+  --paper-muted: #c6cdc4;
+  --hairline: rgba(23, 26, 24, 0.14);
+  --hairline-dark: rgba(242, 241, 235, 0.14);
 }
 
 @layer base {
@@ -36,6 +47,7 @@
   body {
     @apply bg-paper font-sans text-obsidian antialiased;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    text-rendering: optimizeLegibility;
   }
 
   ::selection {
@@ -45,17 +57,36 @@
 
   :focus-visible {
     outline: 2px solid #243d31;
-    outline-offset: 2px;
+    outline-offset: 3px;
   }
 
-  .surface-dark :focus-visible {
+  .surface-dark :focus-visible,
+  [data-surface="dark"] :focus-visible {
     outline-color: #c8f169;
+  }
+
+  select,
+  textarea {
+    border-radius: 0.14rem;
+  }
+
+  select:focus-visible,
+  textarea:focus-visible {
+    border-color: #243d31;
+  }
+
+  table {
+    font-variant-numeric: tabular-nums;
   }
 }
 
 @layer components {
   .mono-label {
-    @apply font-mono text-[10px] font-medium uppercase tracking-label;
+    @apply font-mono text-label font-medium uppercase;
+  }
+
+  .mono-caption {
+    @apply font-mono text-[11px] uppercase leading-4 tracking-[0.12em];
   }
 
   .hairline-top {
@@ -81,12 +112,85 @@
     background-size: 32px 32px;
   }
 
+  .page-frame {
+    @apply mx-auto w-full max-w-[1600px] px-5 sm:px-8;
+  }
+
+  .editorial-grid {
+    @apply grid gap-8 lg:grid-cols-12 lg:gap-10;
+  }
+
+  .rule-block {
+    @apply border-y border-obsidian/15 bg-paper;
+  }
+
+  .metric-cell {
+    @apply border-obsidian/10 bg-paper p-4 sm:p-5;
+  }
+
+  .metric-label {
+    @apply mono-label text-ink-muted;
+  }
+
+  .metric-value {
+    @apply mt-2 font-mono text-2xl font-medium leading-none tabular sm:text-3xl;
+  }
+
+  .meter-track {
+    @apply relative h-1.5 w-full overflow-hidden bg-obsidian/10;
+  }
+
+  .data-row {
+    @apply border-b border-obsidian/10 transition-colors duration-150 hover:bg-sage/40;
+  }
+
+  .table-scroll {
+    @apply relative overflow-x-auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(23, 26, 24, 0.28) transparent;
+  }
+
+  .table-scroll:focus-visible {
+    outline-offset: -3px;
+  }
+
   .scrollbar-none {
     scrollbar-width: none;
   }
 
   .scrollbar-none::-webkit-scrollbar {
     display: none;
+  }
+
+  .rule-draw {
+    transform-origin: left center;
+    animation: rule-draw 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .surface-dark .text-ink-muted,
+  [data-surface="dark"] .text-ink-muted {
+    color: #c6cdc4;
+  }
+
+  .surface-dark .text-rust-ink,
+  [data-surface="dark"] .text-rust-ink,
+  .surface-dark .text-rust,
+  [data-surface="dark"] .text-rust {
+    color: #f0a68d;
+  }
+
+  .surface-dark .text-forest,
+  [data-surface="dark"] .text-forest {
+    color: #c8f169;
+  }
+}
+
+@keyframes rule-draw {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
   }
 }
 
@@ -101,5 +205,9 @@
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+
+  .rule-draw {
+    animation: none;
   }
 }

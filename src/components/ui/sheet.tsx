@@ -56,7 +56,7 @@ const SheetContent = React.forwardRef<
       {...props}
     >
       {children}
-      <SheetPrimitive.Close className="absolute right-5 top-5 rounded-sm p-1 text-paper/60 transition-colors hover:bg-paper/10 hover:text-paper">
+      <SheetPrimitive.Close className="absolute right-5 top-5 rounded-sm border border-paper/20 p-1.5 text-paper-muted transition-colors hover:border-paper/50 hover:bg-paper/10 hover:text-paper">
         <X className="h-4 w-4" aria-hidden="true" />
         <span className="sr-only">{closeLabel}</span>
       </SheetPrimitive.Close>
@@ -82,7 +82,7 @@ function SheetDescription({
 }: React.ComponentPropsWithoutRef<typeof SheetPrimitive.Description>) {
   return (
     <SheetPrimitive.Description
-      className={cn("mono-label text-paper/45", className)}
+      className={cn("mono-label text-paper-muted", className)}
       {...props}
     />
   );

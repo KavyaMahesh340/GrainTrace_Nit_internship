@@ -20,11 +20,11 @@ export function salesStatusVariant(status: string): BadgeProps["variant"] {
 }
 
 export function salesFieldClass() {
-  return "h-11 w-full rounded-sm border border-obsidian/25 bg-paper px-3 text-sm text-obsidian focus-visible:border-forest focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest/25";
+  return "h-11 w-full min-w-0 rounded-sm border border-obsidian/20 bg-paper px-3 text-sm text-obsidian tabular focus-visible:border-forest focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest/25";
 }
 
 export function salesLabelClass() {
-  return "mono-label mb-2 block text-machine";
+  return "mono-label mb-2 block text-ink-muted";
 }
 
 export function parseAmount(value: string) {

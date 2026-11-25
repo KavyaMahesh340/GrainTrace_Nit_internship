@@ -31,13 +31,27 @@ const viewports = [
   { width: 1440, height: 900, label: "1440px" },
 ];
 
+const allRoutes = [
+  { path: "/", label: "overview" },
+  { path: "/orders?focus=SO-2481", label: "orders" },
+  { path: "/production?exception=EX-0142", label: "production" },
+  { path: "/batch-dna", label: "batch-dna" },
+  { path: "/collections", label: "collections" },
+  { path: "/dispatch", label: "dispatch" },
+  { path: "/finished-goods", label: "finished-goods" },
+  { path: "/inventory", label: "inventory" },
+  { path: "/invoices", label: "invoices" },
+  { path: "/purchases", label: "purchases" },
+  { path: "/recipes", label: "recipes" },
+  { path: "/reports", label: "reports" },
+  { path: "/audit", label: "audit" },
+  { path: "/unauthorized", label: "unauthorized" },
+];
+
 const routeChecks = [
-  { path: "/", expectedStatus: 200 },
-  { path: "/orders?focus=SO-2481", expectedStatus: 200 },
-  { path: "/production?exception=EX-0142", expectedStatus: 200 },
-  { path: "/batch-dna", expectedStatus: 200 },
   { path: "/offline", expectedStatus: 200 },
-  { path: "/unauthorized", expectedStatus: 200 },
+  { path: "/login", expectedStatus: 200 },
+  { path: "/session-expired", expectedStatus: 200 },
   { path: "/does-not-exist", expectedStatus: 404 },
 ];
 
@@ -50,6 +64,7 @@ const pwaAssets = [
 ];
 
 const failures = [];
+let activeRoute = "startup";
 const browser = await puppeteer.launch({
   executablePath,
   headless: true,
@@ -59,7 +74,9 @@ const browser = await puppeteer.launch({
 function watchConsole(page, label, errors) {
   page.on("console", (message) => {
     if (message.type() === "error") {
-      errors.push(`${label}: ${message.text()}`);
+      const location = message.location();
+      const source = location.url ? ` at ${location.url}:${location.lineNumber}:${location.columnNumber}` : "";
+      errors.push(`${label} ${activeRoute}: ${message.text()}${source}`);
     }
   });
   page.on("pageerror", (error) => {
@@ -102,63 +119,76 @@ try {
     const errors = [];
     watchConsole(page, viewport.label, errors);
     await page.setViewport({ width: viewport.width, height: viewport.height });
-    await page.goto(`${baseUrl}/`, { waitUntil: "networkidle0", timeout: 30000 });
 
-    const metrics = await page.evaluate(() => ({
-      scrollWidth: document.documentElement.scrollWidth,
-      clientWidth: document.documentElement.clientWidth,
-      heading: document.querySelector("h1")?.textContent?.trim() ?? "",
-      mobileTriggerVisible: (() => {
-        const trigger = document.querySelector('[aria-label="Open navigation"]');
-        return trigger ? getComputedStyle(trigger).display !== "none" : false;
-      })(),
-      overflowing: Array.from(document.querySelectorAll("*"))
-        .filter((element) => element.getBoundingClientRect().right > document.documentElement.clientWidth + 1)
-        .slice(0, 12)
-        .map((element) => ({
-          tag: element.tagName,
-          className: String(element.className ?? "").slice(0, 120),
-          right: Math.round(element.getBoundingClientRect().right),
-          width: Math.round(element.getBoundingClientRect().width),
-        })),
-      uncontained: Array.from(document.querySelectorAll("main *"))
-        .filter((element) => {
-          const style = getComputedStyle(element);
-          return style.overflowX === "visible" && element.scrollWidth > element.clientWidth + 1;
-        })
-        .slice(0, 12)
-        .map((element) => ({
-          tag: element.tagName,
-          className: String(element.className ?? "").slice(0, 120),
-          scrollWidth: element.scrollWidth,
-          clientWidth: element.clientWidth,
-          parent: String(element.parentElement?.className ?? "").slice(0, 120),
-          children: Array.from(element.children)
-            .slice(0, 5)
-            .map((child) => `${child.tagName}.${String(child.className ?? "").slice(0, 80)}`),
-        })),
-    }));
-
-    if (metrics.scrollWidth > metrics.clientWidth + 1) {
-      failures.push(
-        `${viewport.label}: document overflows horizontally (${metrics.scrollWidth} > ${metrics.clientWidth}) uncontained=${JSON.stringify(metrics.uncontained)} overflowing=${JSON.stringify(metrics.overflowing)}`,
-      );
-    }
-    if (!metrics.heading) {
-      failures.push(`${viewport.label}: overview heading missing`);
-    }
-    if (viewport.width < 768 && !metrics.mobileTriggerVisible) {
-      failures.push(`${viewport.label}: mobile navigation trigger hidden`);
-    }
-    if (viewport.width >= 768 && metrics.mobileTriggerVisible) {
-      failures.push(`${viewport.label}: mobile navigation trigger unexpectedly visible`);
-    }
-    if (screenshotDir) {
-      await page.screenshot({
-        path: join(screenshotDir, `overview-${viewport.width}.png`),
-        fullPage: true,
+    for (const route of allRoutes) {
+      activeRoute = route.path;
+      const response = await page.goto(`${baseUrl}${route.path}`, {
+        waitUntil: "networkidle0",
+        timeout: 30000,
       });
+      if (!response || !response.ok()) {
+        failures.push(`${viewport.label} ${route.path}: unexpected status ${response?.status() ?? "none"}`);
+        continue;
+      }
+
+      const metrics = await page.evaluate(() => ({
+        scrollWidth: document.documentElement.scrollWidth,
+        clientWidth: document.documentElement.clientWidth,
+        heading: document.querySelector("h1")?.textContent?.trim() ?? "",
+        mainCount: document.querySelectorAll("main").length,
+        mobileTriggerVisible: (() => {
+          const trigger = document.querySelector('[aria-label="Open navigation"]');
+          return trigger ? getComputedStyle(trigger).display !== "none" : false;
+        })(),
+        overflowing: Array.from(document.querySelectorAll("*"))
+          .filter((element) => element.getBoundingClientRect().right > document.documentElement.clientWidth + 1)
+          .slice(0, 12)
+          .map((element) => ({
+            tag: element.tagName,
+            className: String(element.className ?? "").slice(0, 120),
+            right: Math.round(element.getBoundingClientRect().right),
+            width: Math.round(element.getBoundingClientRect().width),
+          })),
+        uncontained: Array.from(document.querySelectorAll("main *"))
+          .filter((element) => {
+            const style = getComputedStyle(element);
+            return style.overflowX === "visible" && element.scrollWidth > element.clientWidth + 1;
+          })
+          .slice(0, 12)
+          .map((element) => ({
+            tag: element.tagName,
+            className: String(element.className ?? "").slice(0, 120),
+            scrollWidth: element.scrollWidth,
+            clientWidth: element.clientWidth,
+            parent: String(element.parentElement?.className ?? "").slice(0, 120),
+          })),
+      }));
+
+      if (metrics.scrollWidth > metrics.clientWidth + 1) {
+        failures.push(
+          `${viewport.label} ${route.path}: document overflows horizontally (${metrics.scrollWidth} > ${metrics.clientWidth}) uncontained=${JSON.stringify(metrics.uncontained)} overflowing=${JSON.stringify(metrics.overflowing)}`,
+        );
+      }
+      if (!metrics.heading) {
+        failures.push(`${viewport.label} ${route.path}: page heading missing`);
+      }
+      if (metrics.mainCount !== 1) {
+        failures.push(`${viewport.label} ${route.path}: expected one main landmark, found ${metrics.mainCount}`);
+      }
+      if (viewport.width < 768 && !metrics.mobileTriggerVisible) {
+        failures.push(`${viewport.label} ${route.path}: mobile navigation trigger hidden`);
+      }
+      if (viewport.width >= 768 && metrics.mobileTriggerVisible) {
+        failures.push(`${viewport.label} ${route.path}: mobile navigation trigger unexpectedly visible`);
+      }
+      if (screenshotDir && (viewport.width === 1440 || viewport.width === 375 || route.path === "/")) {
+        await page.screenshot({
+          path: join(screenshotDir, `${route.label}-${viewport.width}.png`),
+          fullPage: true,
+        });
+      }
     }
+
     failures.push(...errors);
     await page.close();
   }
@@ -171,6 +201,7 @@ try {
     const errors = [];
     watchConsole(page, `salesman-${viewport.label}`, errors);
     await page.setViewport({ width: viewport.width, height: viewport.height });
+    activeRoute = "/orders (salesman)";
     await page.goto(`${baseUrl}/orders`, { waitUntil: "networkidle0", timeout: 30000 });
 
     const metrics = await page.evaluate(() => ({
@@ -205,7 +236,7 @@ try {
     if (!metrics.heading.includes("Orders, one hand at a time")) {
       failures.push(`salesman-${viewport.label}: mobile order console heading missing`);
     }
-    if (!metrics.text.includes("LOCAL QUEUE") || !metrics.text.includes("Sync now")) {
+    if (!metrics.text.toLowerCase().includes("local queue") || !metrics.text.toLowerCase().includes("sync now")) {
       failures.push(`salesman-${viewport.label}: offline queue controls missing`);
     }
     if (screenshotDir) {
@@ -223,6 +254,7 @@ try {
     const errors = [];
     watchConsole(page, `offline-${viewport.label}`, errors);
     await page.setViewport({ width: viewport.width, height: viewport.height });
+    activeRoute = "/offline";
     await page.goto(`${baseUrl}/offline`, { waitUntil: "networkidle0", timeout: 30000 });
     const metrics = await page.evaluate(async () => {
       const assets = await Promise.all(
@@ -242,7 +274,7 @@ try {
     if (!metrics.heading.includes("You are offline")) {
       failures.push(`offline-${viewport.label}: fallback heading missing`);
     }
-    if (!metrics.text.includes("LOCAL QUEUE")) {
+    if (!metrics.text.toLowerCase().includes("local queue")) {
       failures.push(`offline-${viewport.label}: local queue panel missing`);
     }
     if (metrics.scrollWidth > metrics.clientWidth + 1) {
@@ -319,5 +351,5 @@ if (failures.length > 0) {
 }
 
 process.stdout.write(
-  `Responsive checks passed at 375px, 768px, 1024px, and 1440px. Mobile offline console, PWA assets, public fallback, and ${routeChecks.length} route checks passed.\n`,
+  `Responsive checks passed at 375px, 768px, 1024px, and 1440px across ${allRoutes.length} authenticated routes. Mobile offline console, PWA assets, public fallback, and ${routeChecks.length} route checks passed.\n`,
 );

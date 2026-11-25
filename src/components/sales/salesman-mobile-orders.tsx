@@ -14,9 +14,12 @@ import {
   RefreshCw,
   WifiOff,
 } from "lucide-react";
+import { PageHeader } from "@/components/system/page-header";
+import { Notice } from "@/components/system/notice";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { MetricGrid } from "@/components/ui/metric";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { formatPaise } from "@/domain";
 import {
@@ -469,121 +472,171 @@ export function SalesmanMobileOrders({ initialOrders, options, canManage, focus 
     step === 3;
 
   return (
-    <div className="mx-auto w-full max-w-3xl pb-40">
-      <header className="surface-dark px-5 py-7 text-paper">
-        <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+    <div className="pb-40">
+      <PageHeader
+        code="Salesman console / Phase 8"
+        title="Orders, one hand at a time."
+        description="Durable drafts, visible sync states, and safe retries when the network is unreliable."
+        footnote="Local queue · unique keys · ordered replay"
+        tone="instrument"
+        aside={
           <div className="min-w-0">
-            <p className="mono-label text-signal">SALESMAN CONSOLE / PHASE 8</p>
-            <h1 className="mt-2 text-3xl font-semibold tracking-tight">Orders, one hand at a time.</h1>
-            <p className="mt-2 max-w-md text-sm text-paper/65">
-              Durable drafts, visible sync states, and safe retries when the network is unreliable.
-            </p>
+            <div className="grid grid-cols-2 gap-px border border-paper/15 bg-paper/10">
+              <div className="min-w-0 bg-forest p-4">
+                <p className="mono-caption text-paper-muted">Link state</p>
+                <p className="mt-2 flex items-center gap-2 font-mono text-sm text-paper">
+                  <span className={`h-2 w-2 shrink-0 ${online ? "bg-signal" : "bg-rust"}`} aria-hidden="true" />
+                  {online ? "CONNECTED" : "OFFLINE"}
+                </p>
+              </div>
+              <div className="min-w-0 bg-forest p-4">
+                <p className="mono-caption text-paper-muted">Last sync</p>
+                <p className="mt-2 font-mono text-sm tabular text-signal">
+                  {formatSyncTime(summary.lastSuccessfulSync)}
+                </p>
+              </div>
+            </div>
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              <Badge variant="dark">{summary.pending} pending</Badge>
+              <Badge variant={summary.failed > 0 ? "rust" : "dark"}>{summary.failed} failed</Badge>
+            </div>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Button
+                variant="light"
+                className="min-h-11"
+                onClick={() => void synchronize()}
+                disabled={busy || !online || summary.pending === 0}
+              >
+                <CloudUpload className="h-4 w-4" /> Sync now
+              </Button>
+              <Button
+                variant="light"
+                className="min-h-11"
+                onClick={() => void retryAllFailed()}
+                disabled={busy || summary.failed === 0}
+              >
+                <RefreshCw className="h-4 w-4" /> Retry failed
+              </Button>
+            </div>
           </div>
-          <div className="min-w-0 border border-paper/20 px-3 py-2 sm:text-right">
-            <p className="mono-label text-paper/50">{online ? "CONNECTED" : "OFFLINE"}</p>
-            <p className="mt-1 font-mono text-sm text-signal">
-              {summary.pending} pending · {summary.failed} failed
-            </p>
-            <p className="mt-1 font-mono text-xs text-paper/55">
-              Last sync {formatSyncTime(summary.lastSuccessfulSync)}
-            </p>
-          </div>
-        </div>
-        <div className="mt-5 flex flex-wrap gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => void synchronize()}
-            disabled={busy || !online || summary.pending === 0}
-          >
-            <CloudUpload className="h-4 w-4" /> Sync now
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => void retryAllFailed()}
-            disabled={busy || summary.failed === 0}
-          >
-            <RefreshCw className="h-4 w-4" /> Retry failed
-          </Button>
-        </div>
-      </header>
+        }
+      />
 
-      <div className="space-y-5 px-5 pt-5">
-        {error ? (
-          <p role="alert" className="border-l-2 border-rust bg-rust/10 px-3 py-2 text-sm text-rust">
-            {error}
-          </p>
-        ) : null}
-        {notice ? (
-          <p role="status" aria-live="polite" className="border-l-2 border-signal bg-signal/15 px-3 py-2 text-sm text-forest">
-            {notice}
-          </p>
-        ) : null}
+      <div className="page-frame space-y-10 py-8 sm:py-10">
+        {error ? <Notice tone="error">{error}</Notice> : null}
+        {notice ? <Notice tone="success">{notice}</Notice> : null}
 
         {!online ? (
-          <div role="status" aria-live="polite" className="flex items-start gap-3 border border-rust/30 bg-rust/10 p-4 text-sm text-rust">
-            <WifiOff className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-            <p>
+          <div
+            role="status"
+            aria-live="polite"
+            className="flex min-h-14 items-start gap-3 border-l-2 border-rust bg-rust/10 px-4 py-3 text-sm leading-6 text-rust-ink"
+          >
+            <WifiOff className="mt-1 h-4 w-4 shrink-0" aria-hidden="true" />
+            <p className="min-w-0">
               You are offline. Orders saved here stay on this device with a unique key and sync in order
               when the connection returns.
             </p>
           </div>
         ) : null}
 
-        <section aria-label="Saved on this device" className="border border-obsidian/15 bg-paper p-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="mono-label text-machine">LOCAL QUEUE</p>
-              <h2 className="mt-1 text-lg font-semibold">Saved orders</h2>
+        <section aria-label="Saved on this device" className="border-y border-obsidian/15">
+          <div className="flex flex-wrap items-end justify-between gap-3 border-b border-obsidian/15 px-4 py-5 sm:px-5">
+            <div className="min-w-0">
+              <p className="mono-label text-rust-ink">Local queue / 01</p>
+              <h2 className="mt-2 text-xl font-semibold tracking-tight">Saved orders</h2>
             </div>
-            <p className="font-mono text-xs text-machine">{summary.total} total</p>
+            <Badge variant="machine">{summary.total} total</Badge>
           </div>
-          <div className="mt-4 space-y-3">
+          <MetricGrid
+            columns={4}
+            className="border-b border-obsidian/15"
+            items={[
+              { label: "Drafts", value: String(summary.drafts), note: "editable on device" },
+              { label: "Pending", value: String(summary.pending), note: "waiting for sync" },
+              { label: "Failed", value: String(summary.failed), note: "needs a retry", tone: "rust" },
+              { label: "Synced", value: String(summary.synced), note: "sent to server", tone: "forest" },
+            ]}
+          />
+          <div className="divide-y divide-obsidian/10 bg-white/40">
             {offlineOrders.length === 0 ? (
-              <p className="border border-dashed border-obsidian/20 p-6 text-center text-sm text-machine">
+              <p className="px-4 py-10 text-center text-sm text-ink-muted sm:px-5">
                 No orders saved on this device yet.
               </p>
             ) : (
-              visibleOfflineOrders.map((record) => (
-                <div key={record.id} className="min-w-0 border border-obsidian/15 bg-white/50 p-4">
-                  <div className="flex min-w-0 flex-wrap items-start justify-between gap-3">
+              visibleOfflineOrders.map((record, index) => (
+                <div
+                  key={record.id}
+                  className={`min-w-0 border-l-2 px-4 py-4 sm:px-5 ${
+                    record.state === "failed"
+                      ? "border-l-rust"
+                      : record.state === "synced"
+                        ? "border-l-forest"
+                        : "border-l-ink-muted"
+                  }`}
+                >
+                  <p className="mono-caption text-ink-muted">Queue entry {String(index + 1).padStart(2, "0")}</p>
+                  <div className="mt-2 flex min-w-0 flex-wrap items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className="break-all font-mono text-sm">{record.orderNumber}</p>
-                      <p className="mt-1 text-sm text-machine">
+                      <p className="mt-1 text-sm text-ink-muted">
                         {referenceOptions.customers.find((item) => item.id === Number(record.payload.customerId))
                           ?.name ?? `Customer ${record.payload.customerId}`}
                       </p>
-                      <p className="mt-1 font-mono text-xs text-machine">
+                      <p className="mt-1 font-mono text-xs text-ink-muted">
                         {record.payload.quantityPackets} packets · {record.state.replaceAll("_", " ")}
                       </p>
                     </div>
                     <Badge variant={offlineStateVariant(record.state)}>{record.state}</Badge>
                   </div>
                   {record.lastError ? (
-                    <p className="mt-3 flex items-start gap-2 border-l-2 border-rust bg-rust/10 px-3 py-2 text-xs text-rust">
+                    <div className="mt-3 flex min-h-11 items-start gap-2 border-l-2 border-rust bg-rust/10 px-3 py-2 text-xs text-rust-ink">
                       <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                       <span className="min-w-0 break-words">{record.lastError}</span>
-                    </p>
+                    </div>
                   ) : null}
                   <div className="mt-3 flex flex-wrap gap-2">
                     {editableOfflineOrders.some((item) => item.id === record.id) ? (
-                      <Button variant="outline" size="sm" onClick={() => editRecord(record)} disabled={busy}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="min-h-11"
+                        onClick={() => editRecord(record)}
+                        disabled={busy}
+                      >
                         <Pencil className="h-3.5 w-3.5" /> Edit
                       </Button>
                     ) : null}
                     {record.state === "failed" ? (
-                      <Button variant="outline" size="sm" onClick={() => void retryRecord(record)} disabled={busy}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="min-h-11"
+                        onClick={() => void retryRecord(record)}
+                        disabled={busy}
+                      >
                         <RefreshCw className="h-3.5 w-3.5" /> Retry
                       </Button>
                     ) : null}
                     {record.state === "syncing" ? (
-                      <Button variant="outline" size="sm" onClick={() => void resetRecord(record)} disabled={busy}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="min-h-11"
+                        onClick={() => void resetRecord(record)}
+                        disabled={busy}
+                      >
                         Reset
                       </Button>
                     ) : null}
                     {record.state !== "syncing" ? (
-                      <Button variant="ghost" size="sm" onClick={() => void removeRecord(record)} disabled={busy}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="min-h-11"
+                        onClick={() => void removeRecord(record)}
+                        disabled={busy}
+                      >
                         Remove
                       </Button>
                     ) : null}
@@ -593,41 +646,72 @@ export function SalesmanMobileOrders({ initialOrders, options, canManage, focus 
             )}
           </div>
           {offlineOrders.length > 8 ? (
-            <Button variant="ghost" size="sm" className="mt-4" onClick={() => setShowAllQueue((value) => !value)}>
-              {showAllQueue ? "Show recent 8" : `Show all ${offlineOrders.length}`}
-            </Button>
+            <div className="border-t border-obsidian/10 px-4 py-3 sm:px-5">
+              <Button variant="ghost" className="min-h-11" onClick={() => setShowAllQueue((value) => !value)}>
+                {showAllQueue ? "Show recent 8" : `Show all ${offlineOrders.length}`}
+              </Button>
+            </div>
           ) : null}
         </section>
 
-        <section aria-label="New order" className="border border-obsidian/15 bg-paper p-5">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className="mono-label text-machine">STEP {step + 1} / 4</p>
-              <h2 className="mt-1 text-xl font-semibold">{steps[step]}</h2>
+        <section aria-label="New order" className="border-y border-obsidian/15 bg-paper">
+          <div className="flex flex-wrap items-end justify-between gap-4 border-b border-obsidian/15 px-4 py-5 sm:px-5">
+            <div className="min-w-0">
+              <p className="mono-label text-rust-ink">Order entry / 02</p>
+              <div className="mt-3 flex min-w-0 items-end gap-4">
+                <span className="font-mono text-5xl font-medium leading-none tabular text-forest sm:text-6xl">
+                  {String(step + 1).padStart(2, "0")}
+                </span>
+                <div className="min-w-0 border-l border-obsidian/15 pl-4">
+                  <p className="mono-caption text-ink-muted">Step {step + 1} of {steps.length}</p>
+                  <h2 className="mt-1 text-xl font-semibold tracking-tight">{steps[step]}</h2>
+                </div>
+              </div>
             </div>
             {draft.orderNumber ? (
-              <Button variant="outline" onClick={() => {
-                setActiveId(null);
-                setDraft(emptyDraft);
-                setStep(0);
-              }} className="min-h-11">
+              <Button
+                variant="outline"
+                className="min-h-11"
+                onClick={() => {
+                  setActiveId(null);
+                  setDraft(emptyDraft);
+                  setStep(0);
+                }}
+              >
                 Clear
               </Button>
             ) : null}
           </div>
-          <div className="mt-4 flex gap-2" aria-hidden="true">
+          <ol aria-label="Order steps" className="grid grid-cols-4 border-b border-obsidian/15 bg-sage/20">
             {steps.map((label, index) => (
-              <div
+              <li
                 key={label}
-                className={`h-1.5 flex-1 rounded-full ${index <= step ? "bg-forest" : "bg-obsidian/15"}`}
-              />
+                aria-current={index === step ? "step" : undefined}
+                className={`min-w-0 border-r border-obsidian/10 px-2 py-3 last:border-r-0 sm:px-4 ${
+                  index === step
+                    ? "bg-forest text-paper"
+                    : index < step
+                      ? "bg-sage/70 text-ink-muted"
+                      : "text-ink-muted"
+                }`}
+              >
+                <p className={`mono-caption ${index === step ? "text-signal" : "text-ink-muted"}`}>
+                  {String(index + 1).padStart(2, "0")}
+                </p>
+                <p className="mt-1 truncate text-[10px] font-medium uppercase tracking-[0.12em] sm:text-[11px]">
+                  {label}
+                </p>
+              </li>
             ))}
+          </ol>
+          <div className="meter-track" aria-hidden="true">
+            <div className="h-full bg-forest" style={{ width: `${((step + 1) / steps.length) * 100}%` }} />
           </div>
 
-          <div className="mt-6 space-y-5">
+          <div className="space-y-6 px-4 py-6 sm:px-5">
             {step === 0 ? (
-              <div className="space-y-4">
-                <label className="block">
+              <div className="space-y-5">
+                <label className="block min-w-0">
                   <span className={salesLabelClass()}>CUSTOMER</span>
                   <select
                     value={draft.customerId}
@@ -643,18 +727,21 @@ export function SalesmanMobileOrders({ initialOrders, options, canManage, focus 
                   </select>
                 </label>
                 {activeCustomer ? (
-                  <div className="border border-obsidian/15 bg-paper/70 p-4 text-sm">
-                    <p className="font-semibold">{activeCustomer.name}</p>
-                    <p className="mt-1 text-machine">{activeCustomer.state}</p>
-                    <p className="mt-1 font-mono text-xs">{activeCustomer.code}</p>
+                  <div className="border-l-2 border-signal bg-sage/25 px-4 py-3 text-sm">
+                    <p className="mono-caption text-ink-muted">Selected customer</p>
+                    <p className="mt-1 font-semibold">{activeCustomer.name}</p>
+                    <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
+                      <p className="min-w-0 text-ink-muted">{activeCustomer.state}</p>
+                      <p className="font-mono text-xs text-ink-muted">{activeCustomer.code}</p>
+                    </div>
                   </div>
                 ) : null}
               </div>
             ) : null}
 
             {step === 1 ? (
-              <div className="space-y-4">
-                <label className="block">
+              <div className="space-y-5">
+                <label className="block min-w-0">
                   <span className={salesLabelClass()}>PRODUCT</span>
                   <select
                     value={draft.productId}
@@ -670,55 +757,60 @@ export function SalesmanMobileOrders({ initialOrders, options, canManage, focus 
                   </select>
                 </label>
                 {activeProduct ? (
-                  <div className="border border-obsidian/15 bg-paper/70 p-4 text-sm">
-                    <p className="font-semibold">{activeProduct.name}</p>
-                    <p className="mt-1 font-mono text-xs">HSN {activeProduct.hsnCode || "missing"}</p>
+                  <div className="border-l-2 border-signal bg-sage/25 px-4 py-3 text-sm">
+                    <p className="mono-caption text-ink-muted">Selected product</p>
+                    <p className="mt-1 font-semibold">{activeProduct.name}</p>
+                    <p className="mt-2 font-mono text-xs text-ink-muted">
+                      HSN {activeProduct.hsnCode || "missing"}
+                    </p>
                   </div>
                 ) : null}
               </div>
             ) : null}
 
             {step === 2 ? (
-              <div className="space-y-4">
-                <label className="block">
-                  <span className={salesLabelClass()}>PACKETS</span>
-                  <Input
-                    inputMode="numeric"
-                    value={draft.quantity}
-                    onChange={(event) => update("quantity", event.target.value)}
-                    className="h-14 text-lg"
-                  />
-                </label>
-                <label className="block">
-                  <span className={salesLabelClass()}>PRICE PER PACKET (₹)</span>
-                  <Input
-                    inputMode="decimal"
-                    value={draft.unitPrice}
-                    onChange={(event) => update("unitPrice", event.target.value)}
-                    placeholder="0.00"
-                    className="h-14 text-lg"
-                  />
-                </label>
-                <label className="block">
-                  <span className={salesLabelClass()}>DISCOUNT PER PACKET (₹)</span>
-                  <Input
-                    inputMode="decimal"
-                    value={draft.discount}
-                    onChange={(event) => update("discount", event.target.value)}
-                    className="h-14 text-lg"
-                  />
-                </label>
-                <div className="surface-dark flex items-center justify-between gap-3 p-4 text-paper">
-                  <span className="mono-label text-paper/60">LIVE PREVIEW</span>
-                  <span className="font-mono text-2xl text-signal">{formatPaise(estimatePaise)}</span>
+              <div className="space-y-5">
+                <div className="grid gap-5 sm:grid-cols-2">
+                  <label className="block min-w-0 sm:col-span-2">
+                    <span className={salesLabelClass()}>PACKETS</span>
+                    <Input
+                      inputMode="numeric"
+                      value={draft.quantity}
+                      onChange={(event) => update("quantity", event.target.value)}
+                      className="h-14 text-lg"
+                    />
+                  </label>
+                  <label className="block min-w-0">
+                    <span className={salesLabelClass()}>PRICE PER PACKET (₹)</span>
+                    <Input
+                      inputMode="decimal"
+                      value={draft.unitPrice}
+                      onChange={(event) => update("unitPrice", event.target.value)}
+                      placeholder="0.00"
+                      className="h-14 text-lg"
+                    />
+                  </label>
+                  <label className="block min-w-0">
+                    <span className={salesLabelClass()}>DISCOUNT PER PACKET (₹)</span>
+                    <Input
+                      inputMode="decimal"
+                      value={draft.discount}
+                      onChange={(event) => update("discount", event.target.value)}
+                      className="h-14 text-lg"
+                    />
+                  </label>
+                </div>
+                <div className="surface-dark flex min-h-16 items-center justify-between gap-3 px-4 py-3 text-paper">
+                  <span className="mono-caption text-paper-muted">Live preview</span>
+                  <span className="font-mono text-2xl tabular text-signal">{formatPaise(estimatePaise)}</span>
                 </div>
               </div>
             ) : null}
 
             {step === 3 ? (
-              <div className="space-y-4">
+              <div className="space-y-5">
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <label className="block">
+                  <label className="block min-w-0">
                     <span className={salesLabelClass()}>REQUESTED DATE</span>
                     <Input
                       type="date"
@@ -727,7 +819,7 @@ export function SalesmanMobileOrders({ initialOrders, options, canManage, focus 
                       className="h-14 text-base"
                     />
                   </label>
-                  <label className="block">
+                  <label className="block min-w-0">
                     <span className={salesLabelClass()}>REFERENCE</span>
                     <Input
                       value={draft.orderNumber}
@@ -736,7 +828,7 @@ export function SalesmanMobileOrders({ initialOrders, options, canManage, focus 
                     />
                   </label>
                 </div>
-                <label className="block">
+                <label className="block min-w-0">
                   <span className={salesLabelClass()}>NOTES</span>
                   <textarea
                     value={draft.notes}
@@ -744,22 +836,25 @@ export function SalesmanMobileOrders({ initialOrders, options, canManage, focus 
                     className="min-h-24 w-full rounded-sm border border-obsidian/25 bg-paper p-3 text-base"
                   />
                 </label>
-                <div className="border border-obsidian/15 p-4">
-                  <div className="flex justify-between gap-3 text-sm">
-                    <span className="text-machine">Customer</span>
-                    <span className="text-right font-semibold">{activeCustomer?.name ?? "—"}</span>
-                  </div>
-                  <div className="mt-2 flex justify-between gap-3 text-sm">
-                    <span className="text-machine">Product</span>
-                    <span className="text-right font-semibold">{activeProduct?.name ?? "—"}</span>
-                  </div>
-                  <div className="mt-2 flex justify-between gap-3 text-sm">
-                    <span className="text-machine">Packets</span>
-                    <span className="font-mono">{draft.quantity}</span>
-                  </div>
-                  <div className="mt-3 flex justify-between gap-3 border-t border-obsidian/15 pt-3">
-                    <span className="font-semibold">Order value</span>
-                    <span className="font-mono text-xl">{formatPaise(estimatePaise)}</span>
+                <div className="border-t border-obsidian/15 pt-4">
+                  <p className="mono-caption text-ink-muted">Review sheet</p>
+                  <div className="mt-3 divide-y divide-obsidian/10">
+                    <div className="flex min-w-0 justify-between gap-3 py-2 text-sm">
+                      <span className="text-ink-muted">Customer</span>
+                      <span className="min-w-0 break-words text-right font-semibold">{activeCustomer?.name ?? "—"}</span>
+                    </div>
+                    <div className="flex min-w-0 justify-between gap-3 py-2 text-sm">
+                      <span className="text-ink-muted">Product</span>
+                      <span className="min-w-0 break-words text-right font-semibold">{activeProduct?.name ?? "—"}</span>
+                    </div>
+                    <div className="flex min-w-0 justify-between gap-3 py-2 text-sm">
+                      <span className="text-ink-muted">Packets</span>
+                      <span className="font-mono">{draft.quantity}</span>
+                    </div>
+                    <div className="flex min-w-0 justify-between gap-3 py-3">
+                      <span className="font-semibold">Order value</span>
+                      <span className="font-mono text-xl tabular">{formatPaise(estimatePaise)}</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -767,121 +862,141 @@ export function SalesmanMobileOrders({ initialOrders, options, canManage, focus 
           </div>
         </section>
 
-        <section aria-label="Recent orders" className="border border-obsidian/15 bg-paper p-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="mono-label text-machine">FIELD HISTORY</p>
-              <h2 className="mt-1 text-lg font-semibold">Your orders</h2>
+        <section aria-label="Recent orders" className="border-y border-obsidian/15">
+          <div className="flex flex-wrap items-end justify-between gap-3 border-b border-obsidian/15 px-4 py-5 sm:px-5">
+            <div className="min-w-0">
+              <p className="mono-label text-rust-ink">Field history / 03</p>
+              <h2 className="mt-2 text-xl font-semibold tracking-tight">Your orders</h2>
             </div>
             <Button
               variant="outline"
               size="icon"
+              className="h-11 w-11"
               onClick={() => void refreshOrders().catch((caught) => setError(String(caught)))}
               aria-label="Refresh orders"
             >
               <RefreshCw className="h-4 w-4" />
             </Button>
           </div>
-          <div className="mt-4 space-y-3">
+          <div className="divide-y divide-obsidian/10 bg-white/40">
             {orders.length === 0 ? (
-              <p className="border border-dashed border-obsidian/20 p-6 text-center text-sm text-machine">
+              <p className="px-4 py-10 text-center text-sm text-ink-muted sm:px-5">
                 No synchronized orders yet. Queue one locally to start.
               </p>
             ) : (
-              visibleOrders.map((order) => (
+              visibleOrders.map((order, index) => (
                 <button
                   key={order.id}
                   type="button"
                   onClick={() => void openDetail(order.orderNumber)}
-                  className="flex w-full items-center justify-between gap-3 border border-obsidian/15 bg-paper/70 p-4 text-left transition-colors hover:border-forest"
+                  className="data-row flex min-h-14 w-full min-w-0 items-center justify-between gap-3 px-4 py-3 text-left sm:px-5"
                 >
-                  <div className="min-w-0">
-                    <p className="font-mono text-sm">{order.orderNumber}</p>
-                    <p className="mt-1 truncate text-sm text-machine">{order.customerName}</p>
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span className="mono-caption shrink-0 text-ink-muted">
+                      {String(index + 1).padStart(2, "0")}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="font-mono text-sm">{order.orderNumber}</p>
+                      <p className="mt-1 truncate text-sm text-ink-muted">{order.customerName}</p>
+                    </div>
                   </div>
                   <div className="shrink-0 text-right">
                     <Badge variant={salesStatusVariant(order.status)}>{order.status.replaceAll("_", " ")}</Badge>
-                    <p className="mt-2 font-mono text-xs">{formatPaise(order.totalAmountPaise)}</p>
+                    <p className="mt-2 font-mono text-xs tabular">{formatPaise(order.totalAmountPaise)}</p>
                   </div>
                 </button>
               ))
             )}
           </div>
           {orders.length > 8 ? (
-            <Button variant="ghost" size="sm" className="mt-4" onClick={() => setShowAllHistory((value) => !value)}>
-              {showAllHistory ? "Show recent 8" : `Show all ${orders.length}`}
-            </Button>
+            <div className="border-t border-obsidian/10 px-4 py-3 sm:px-5">
+              <Button variant="ghost" className="min-h-11" onClick={() => setShowAllHistory((value) => !value)}>
+                {showAllHistory ? "Show recent 8" : `Show all ${orders.length}`}
+              </Button>
+            </div>
           ) : null}
         </section>
       </div>
 
       <div className="fixed inset-x-0 bottom-0 z-30 border-t border-paper/15 bg-obsidian p-4 text-paper">
-        <div className="mx-auto flex max-w-3xl items-center gap-2">
-          {draft.orderNumber && step > 0 ? (
-            <Button
-              variant="outline"
-              size="icon"
-              className="h-14 w-14 shrink-0"
-              onClick={() => setStep((current) => Math.max(0, current - 1))}
-              aria-label="Previous step"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-          ) : null}
-          {!draft.orderNumber ? (
-            <Button className="h-14 flex-1 text-base" onClick={startOrder}>
-              <Plus className="h-5 w-5" /> Start order
-            </Button>
-          ) : step < 3 ? (
-            <Button
-              className="h-14 flex-1 text-base"
-              disabled={!canAdvance}
-              onClick={() => setStep((current) => Math.min(3, current + 1))}
-            >
-              Continue <ArrowRight className="h-5 w-5" />
-            </Button>
-          ) : (
-            <Button className="h-14 flex-1 text-base" disabled={busy || !canManage} onClick={() => void queueSubmission()}>
-              {busy ? <RefreshCw className="h-5 w-5 animate-spin" /> : <Check className="h-5 w-5" />}
-              {online ? "Queue and sync" : "Queue for later"}
-            </Button>
-          )}
-          {draft.orderNumber ? (
-            <Button
-              variant="outline"
-              className="h-14 shrink-0 px-3 sm:px-4"
-              onClick={() => void saveDraft()}
-              disabled={busy}
-            >
-              <CloudOff className="h-5 w-5" /> <span className="hidden sm:inline">Save draft</span>
-            </Button>
-          ) : null}
+        <div className="mx-auto max-w-3xl">
+          <div className="mb-2 flex min-w-0 items-center justify-between gap-3">
+            <span className="mono-caption text-paper-muted">Field actions</span>
+            <span className="min-w-0 truncate font-mono text-[11px] text-paper-muted">
+              {draft.orderNumber || "No active order"}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            {draft.orderNumber && step > 0 ? (
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-14 w-14 shrink-0"
+                onClick={() => setStep((current) => Math.max(0, current - 1))}
+                aria-label="Previous step"
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+            ) : null}
+            {!draft.orderNumber ? (
+              <Button className="h-14 flex-1 text-base" onClick={startOrder}>
+                <Plus className="h-5 w-5" /> Start order
+              </Button>
+            ) : step < 3 ? (
+              <Button
+                className="h-14 flex-1 text-base"
+                disabled={!canAdvance}
+                onClick={() => setStep((current) => Math.min(3, current + 1))}
+              >
+                Continue <ArrowRight className="h-5 w-5" />
+              </Button>
+            ) : (
+              <Button className="h-14 flex-1 text-base" disabled={busy || !canManage} onClick={() => void queueSubmission()}>
+                {busy ? <RefreshCw className="h-5 w-5 animate-spin" /> : <Check className="h-5 w-5" />}
+                {online ? "Queue and sync" : "Queue for later"}
+              </Button>
+            )}
+            {draft.orderNumber ? (
+              <Button
+                variant="outline"
+                className="h-14 shrink-0 px-3 sm:px-4"
+                onClick={() => void saveDraft()}
+                disabled={busy}
+              >
+                <CloudOff className="h-5 w-5" /> <span className="hidden sm:inline">Save draft</span>
+              </Button>
+            ) : null}
+          </div>
         </div>
       </div>
 
       <Sheet open={detailOpen} onOpenChange={setDetailOpen}>
         <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle className="font-mono">{detail?.orderNumber}</SheetTitle>
+          <SheetHeader className="border-b border-paper/15">
+            <SheetTitle className="font-mono text-paper">{detail?.orderNumber}</SheetTitle>
             <SheetDescription>
               {detail?.customerName} · {detail?.status.replaceAll("_", " ")}
             </SheetDescription>
           </SheetHeader>
-          <div className="space-y-3 px-6 pb-8">
-            {detail?.lines.map((line) => (
-              <div key={line.id} className="border border-paper/15 p-4 text-sm">
-                <p className="font-semibold text-paper">{line.productName}</p>
-                <p className="mt-1 font-mono text-xs text-paper/60">
-                  {line.quantityPackets} packets × {formatPaise(line.unitPricePaise)}
-                </p>
-                <p className="mt-2 font-mono text-signal">{formatPaise(line.lineTotalPaise)}</p>
+          <div className="px-6 pb-8">
+            <div className="space-y-px bg-paper/10">
+              {detail?.lines.map((line) => (
+                <div key={line.id} className="min-w-0 bg-obsidian px-4 py-3 text-sm">
+                  <p className="font-semibold text-paper">{line.productName}</p>
+                  <p className="mt-1 font-mono text-xs text-paper-muted">
+                    {line.quantityPackets} packets × {formatPaise(line.unitPricePaise)}
+                  </p>
+                  <p className="mt-2 font-mono text-signal">{formatPaise(line.lineTotalPaise)}</p>
+                </div>
+              ))}
+              <div className="flex min-w-0 items-center justify-between gap-3 bg-obsidian px-4 py-3">
+                <span className="text-paper-muted">Order total</span>
+                <span className="font-mono text-xl tabular text-signal">
+                  {formatPaise(detail?.totalAmountPaise ?? 0)}
+                </span>
               </div>
-            ))}
-            <div className="flex items-center justify-between border-t border-paper/20 pt-4">
-              <span className="text-paper/60">Order total</span>
-              <span className="font-mono text-xl text-signal">{formatPaise(detail?.totalAmountPaise ?? 0)}</span>
             </div>
-            <Button variant="outline" className="w-full" onClick={() => setDetailOpen(false)}>
+            <Button variant="light" className="mt-4 min-h-11 w-full" onClick={() => setDetailOpen(false)}>
               <ClipboardList className="h-4 w-4" /> Done
             </Button>
           </div>

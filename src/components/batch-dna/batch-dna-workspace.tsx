@@ -20,9 +20,12 @@ import {
   ShieldCheck,
   Truck,
 } from "lucide-react";
+import { Notice } from "@/components/system/notice";
+import { PageHeader } from "@/components/system/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { MetricGrid } from "@/components/ui/metric";
 import { formatPaise } from "@/domain";
 import type {
   BatchDnaTrace,
@@ -197,38 +200,33 @@ export function BatchDnaWorkspace({ initialBatches, initialTrace, initialIdentif
   }
 
   return (
-    <div className="min-h-screen bg-paper">
-      <div className="mx-auto max-w-[1800px] px-5 py-12 sm:px-8 sm:py-16">
-        <div className="grid gap-8 lg:grid-cols-12">
-          <div className="lg:col-span-8">
-            <p className="mono-label text-rust">Module 12 / Batch DNA</p>
-            <h1 className="mt-5 text-4xl font-semibold leading-none tracking-tightest sm:text-6xl">
-              Trace the batch.
-            </h1>
-            <p className="mt-5 max-w-2xl text-sm leading-7 text-obsidian/60">
-              Follow finished goods backward to purchase evidence or forward to dispatch and invoice.
-              Every node is a real record; every link carries its source quantity.
-            </p>
-          </div>
-          <div className="lg:col-span-4 lg:border-l lg:border-obsidian/15 lg:pl-8">
-            <div className="grid grid-cols-2 gap-px bg-obsidian/10">
-              <div className="bg-paper p-4">
-                <p className="mono-label text-machine">Source lots</p>
-                <p className="mt-2 text-3xl font-semibold tabular">{trace?.summary.sourceLots ?? 0}</p>
+    <div>
+      <PageHeader
+        code="12 / Batch DNA"
+        title="Trace the batch."
+        description="Follow finished goods backward to purchase evidence or forward to dispatch and invoice. Every node is a real record; every link carries its source quantity."
+        footnote="Ten controlled stages · source to invoice"
+        tone="dark"
+        aside={
+          <div className="min-w-0">
+            <div className="grid grid-cols-2 gap-px border border-paper/15 bg-paper/15">
+              <div className="bg-obsidian p-4">
+                <p className="mono-label text-paper-muted">Source lots</p>
+                <p className="mt-2 text-3xl font-semibold tabular text-paper">{trace?.summary.sourceLots ?? 0}</p>
               </div>
-              <div className="bg-paper p-4">
-                <p className="mono-label text-machine">Ledger events</p>
-                <p className="mt-2 text-3xl font-semibold tabular">{trace?.summary.ledgerEvents ?? 0}</p>
+              <div className="bg-obsidian p-4">
+                <p className="mono-label text-paper-muted">Ledger events</p>
+                <p className="mt-2 text-3xl font-semibold tabular text-paper">{trace?.summary.ledgerEvents ?? 0}</p>
               </div>
-              <div className="bg-paper p-4">
-                <p className="mono-label text-machine">Good packets</p>
-                <p className="mt-2 text-3xl font-semibold tabular">
+              <div className="bg-obsidian p-4">
+                <p className="mono-label text-paper-muted">Good packets</p>
+                <p className="mt-2 text-3xl font-semibold tabular text-paper">
                   {formatNumber(trace?.summary.goodOutputPackets ?? 0)}
                 </p>
               </div>
-              <div className="bg-paper p-4">
-                <p className="mono-label text-machine">Variance flags</p>
-                <p className="mt-2 text-3xl font-semibold tabular text-rust">
+              <div className="bg-obsidian p-4">
+                <p className="mono-label text-paper-muted">Variance flags</p>
+                <p className="mt-2 text-3xl font-semibold tabular text-rust-ink">
                   {trace?.summary.varianceFlags ?? 0}
                 </p>
               </div>
@@ -239,19 +237,19 @@ export function BatchDnaWorkspace({ initialBatches, initialTrace, initialIdentif
               {trace && trace.gaps.length > 0 ? <Badge variant="rust">{trace.gaps.length} gaps</Badge> : null}
             </div>
           </div>
-        </div>
+        }
+      />
 
-        {error ? (
-          <div className="mt-8 border border-rust/40 bg-rust/10 px-4 py-3 text-sm text-rust">{error}</div>
-        ) : null}
+      <div className="page-frame py-10 sm:py-14">
+        {error ? <Notice tone="error" className="mb-8">{error}</Notice> : null}
 
-        <section className="mt-12 grid gap-6 xl:grid-cols-12">
-          <aside className="xl:col-span-3">
-            <div className="border border-obsidian/15">
+        <section className="mt-12 grid gap-6 xl:grid-cols-12" aria-label="Batch trace index and evidence graph">
+          <aside className="min-w-0 xl:col-span-3">
+            <div className="border border-obsidian/15 bg-paper">
               <div className="border-b border-obsidian/15 p-4">
-                <p className="mono-label text-machine">Traceable batches</p>
+                <p className="mono-label text-rust-ink">01 / Traceable batches</p>
                 <div className="relative mt-4">
-                  <Search className="absolute left-3 top-3.5 h-4 w-4 text-machine" aria-hidden="true" />
+                  <Search className="absolute left-3 top-3.5 h-4 w-4 text-ink-muted" aria-hidden="true" />
                   <Input
                     aria-label="Search traceable batches"
                     className={`${fieldClass()} pl-9`}
@@ -261,9 +259,9 @@ export function BatchDnaWorkspace({ initialBatches, initialTrace, initialIdentif
                   />
                 </div>
               </div>
-              <div className="max-h-[560px] overflow-y-auto">
+              <div className="max-h-[560px] overflow-y-auto" role="region" aria-label="Traceable batches" tabIndex={0}>
                 {filteredBatches.length === 0 ? (
-                  <p className="p-4 text-xs leading-6 text-machine">
+                  <p className="p-4 text-xs leading-6 text-ink-muted">
                     No posted batch traces yet. Post a production run to create one.
                   </p>
                 ) : (
@@ -274,23 +272,23 @@ export function BatchDnaWorkspace({ initialBatches, initialTrace, initialIdentif
                         key={batch.batchCode}
                         type="button"
                         onClick={() => void loadTrace(batch.batchCode)}
-                        className={`w-full border-b border-obsidian/10 px-4 py-4 text-left transition-colors ${
+                        className={`w-full min-w-0 border-b border-obsidian/10 px-4 py-4 text-left transition-colors ${
                           active ? "bg-obsidian text-paper" : "hover:bg-sage/30"
                         }`}
                       >
                         <div className="flex items-center justify-between gap-2">
-                          <span className="font-mono text-xs">{batch.batchCode}</span>
+                          <span className="min-w-0 truncate font-mono text-xs">{batch.batchCode}</span>
                           <Badge variant={active ? "machine" : statusVariant(batch.status)}>
                             {batch.status.replace("_", " ")}
                           </Badge>
                         </div>
-                        <p className={`mt-2 text-sm ${active ? "text-paper/75" : "text-obsidian/70"}`}>
+                        <p className={`mt-2 text-sm ${active ? "text-paper-muted" : "text-ink-muted"}`}>
                           {batch.productName}
                         </p>
-                        <div className={`mt-2 flex gap-3 mono-label ${active ? "text-paper/40" : "text-machine"}`}>
+                        <div className={`mt-2 flex flex-wrap gap-x-3 gap-y-1 mono-label ${active ? "text-paper-muted" : "text-ink-muted"}`}>
                           <span>{batch.runNumber}</span>
                           <span>{batch.sourceLots} lots</span>
-                          {batch.flaggedLinks > 0 ? <span className="text-rust">{batch.flaggedLinks} flags</span> : null}
+                          {batch.flaggedLinks > 0 ? <span className="text-rust-ink">{batch.flaggedLinks} flags</span> : null}
                         </div>
                       </button>
                     );
@@ -300,22 +298,22 @@ export function BatchDnaWorkspace({ initialBatches, initialTrace, initialIdentif
             </div>
           </aside>
 
-          <div className="xl:col-span-9">
+          <div className="min-w-0 xl:col-span-9">
             {!trace ? (
               <div className="surface-dark flex min-h-[560px] flex-col items-center justify-center p-10 text-center text-paper">
                 <Route className="h-10 w-10 text-signal" aria-hidden="true" />
                 <h2 className="mt-6 text-2xl font-semibold">Select a batch to begin</h2>
-                <p className="mt-3 max-w-sm text-sm text-paper/55">
+                <p className="mt-3 max-w-sm text-sm text-paper-muted">
                   The trace graph loads only from posted production records and their linked evidence.
                 </p>
               </div>
             ) : (
               <div className="surface-dark overflow-hidden" aria-busy={loading ? "true" : undefined}>
                 <div className="flex flex-wrap items-end justify-between gap-4 border-b border-paper/10 p-5">
-                  <div>
-                    <p className="mono-label text-paper/40">Live trace</p>
+                  <div className="min-w-0">
+                    <p className="mono-label text-paper-muted">02 / Live trace</p>
                     <h2 className="mt-2 font-mono text-xl">{trace.batchCode}</h2>
-                    <p className="mt-1 text-xs text-paper/50">
+                    <p className="mt-1 text-xs text-paper-muted">
                       {trace.productCode} · {trace.runNumber} · {trace.productionDate}
                     </p>
                   </div>
@@ -342,33 +340,43 @@ export function BatchDnaWorkspace({ initialBatches, initialTrace, initialIdentif
                   </div>
                 </div>
 
-                <div className="flex gap-px overflow-x-auto border-b border-paper/10 bg-paper/10">
+                <div
+                  className="table-scroll flex gap-px border-b border-paper/10 bg-paper/10"
+                  role="region"
+                  aria-label="Evidence stage counts, horizontally scrollable"
+                  tabIndex={0}
+                >
                   {stages.map((stage) => {
                     const count = trace.nodes.filter(
                       (node) => node.stage === stage.key && visibility.nodes.has(node.id),
                     ).length;
                     return (
                       <div key={stage.key} className="min-w-[112px] bg-obsidian px-3 py-3">
-                        <p className="mono-label text-paper/35">{stage.short}</p>
-                        <p className="mt-1 text-xs tabular text-paper/65">{count} nodes</p>
+                        <p className="mono-label text-paper-muted">{stage.short}</p>
+                        <p className="mt-1 text-xs tabular text-paper">{count} nodes</p>
                       </div>
                     );
                   })}
                 </div>
 
-                <div className="max-h-[720px] overflow-auto p-5">
+                <div
+                  className="max-h-[720px] overflow-auto p-5"
+                  role="region"
+                  aria-label="Batch evidence graph, horizontally scrollable"
+                  tabIndex={0}
+                >
                   <div className="grid min-w-[1280px] grid-cols-10 gap-3">
                     {stages.map((stage) => {
                       const nodes = trace.nodes.filter(
                         (node) => node.stage === stage.key && visibility.nodes.has(node.id),
                       );
                       return (
-                        <div key={stage.key} className="space-y-3">
-                          <p className="mono-label sticky top-0 z-10 bg-obsidian py-1 text-paper/40">
+                        <div key={stage.key} className="min-w-0 space-y-3">
+                          <p className="mono-label sticky top-0 z-10 bg-obsidian py-1 text-paper-muted">
                             {stage.label}
                           </p>
                           {nodes.length === 0 ? (
-                            <p className="border border-dashed border-paper/10 p-3 text-[10px] leading-5 text-paper/25">
+                            <p className="border border-dashed border-paper/15 p-3 text-[10px] leading-5 text-paper-muted">
                               No evidence in this stage
                             </p>
                           ) : (
@@ -381,7 +389,7 @@ export function BatchDnaWorkspace({ initialBatches, initialTrace, initialIdentif
                                   key={node.id}
                                   type="button"
                                   onClick={() => setSelectedId(node.id)}
-                                  className={`w-full border p-3 text-left transition-colors ${
+                                  className={`w-full min-w-0 border p-3 text-left transition-colors ${
                                     selected
                                       ? "border-signal bg-signal/10"
                                       : node.risk
@@ -390,27 +398,27 @@ export function BatchDnaWorkspace({ initialBatches, initialTrace, initialIdentif
                                   }`}
                                 >
                                   <div className="flex items-start justify-between gap-2">
-                                    <span className="flex items-center gap-1.5 text-paper/55">
+                                    <span className="flex min-w-0 items-center gap-1.5 text-paper-muted">
                                       {nodeIcon(node.kind)}
                                       <span className="mono-label">{node.kind}</span>
                                     </span>
                                     {node.risk ? (
-                                      <AlertTriangle className="h-3.5 w-3.5 text-rust" aria-hidden="true" />
+                                      <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-rust-ink" aria-hidden="true" />
                                     ) : null}
                                   </div>
                                   <p className="mt-3 text-xs font-semibold leading-5 text-paper">{node.label}</p>
                                   <p className="mt-1 break-all font-mono text-[10px] text-signal">{node.code}</p>
-                                  <p className="mt-2 text-[10px] leading-5 text-paper/45">{node.summary}</p>
+                                  <p className="mt-2 text-[10px] leading-5 text-paper-muted">{node.summary}</p>
                                   {node.quantity ? (
-                                    <p className="mt-2 text-[10px] tabular text-paper/70">{node.quantity}</p>
+                                    <p className="mt-2 text-[10px] tabular text-paper">{node.quantity}</p>
                                   ) : null}
                                   {inboundLinks.length > 0 ? (
-                                    <p className="mt-2 border-t border-paper/10 pt-2 text-[9px] leading-4 text-paper/40">
+                                    <p className="mt-2 border-t border-paper/10 pt-2 text-[9px] leading-4 text-paper-muted">
                                       in: {inboundLinks.slice(0, 2).map((edge) => `${edgeLabel(node.id, edge.id)} · ${edge.quantity ?? edge.label}`).join(" / ")}
                                     </p>
                                   ) : null}
                                   {outboundLinks.length > 0 ? (
-                                    <p className="mt-1 text-[9px] leading-4 text-paper/40">
+                                    <p className="mt-1 text-[9px] leading-4 text-paper-muted">
                                       out: {outboundLinks.slice(0, 2).map((edge) => `${edgeLabel(node.id, edge.id)} · ${edge.quantity ?? edge.label}`).join(" / ")}
                                     </p>
                                   ) : null}
@@ -429,40 +437,37 @@ export function BatchDnaWorkspace({ initialBatches, initialTrace, initialIdentif
         </section>
 
         {trace && selectedNode ? (
-          <section className="mt-10 grid gap-6 xl:grid-cols-12">
-            <div className="xl:col-span-8">
-              <div className="border border-obsidian/15 p-6">
+          <section className="mt-10 grid gap-6 xl:grid-cols-12" aria-label="Selected evidence dossier">
+            <div className="min-w-0 xl:col-span-8">
+              <div className="border border-obsidian/15 bg-paper p-5 sm:p-6">
                 <div className="flex flex-wrap items-start justify-between gap-4">
-                  <div>
-                    <p className="mono-label text-machine">{selectedNode.stageLabel}</p>
+                  <div className="min-w-0">
+                    <p className="mono-label text-rust-ink">03 / {selectedNode.stageLabel}</p>
                     <h2 className="mt-3 text-2xl font-semibold">{selectedNode.label}</h2>
-                    <p className="mt-1 font-mono text-xs text-rust">{selectedNode.code}</p>
+                    <p className="mt-1 break-all font-mono text-xs text-rust-ink">{selectedNode.code}</p>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {selectedNode.risk ? <Badge variant="rust">Flagged</Badge> : <Badge variant="outline">Verified link</Badge>}
                     {selectedNode.timestamp ? <Badge variant="dark">{selectedNode.timestamp}</Badge> : null}
                   </div>
                 </div>
-                <p className="mt-5 max-w-3xl text-sm leading-7 text-obsidian/65">{selectedNode.summary}</p>
-                <div className="mt-6 grid gap-px bg-obsidian/10 sm:grid-cols-3">
-                  {[
-                    ["Quantity", selectedNode.quantity ?? "—"],
-                    ["Timestamp", selectedNode.timestamp ?? "—"],
-                    ["Document", selectedNode.document ?? "—"],
-                  ].map(([label, value]) => (
-                    <div key={label} className="bg-paper p-4">
-                      <p className="mono-label text-machine">{label}</p>
-                      <p className="mt-2 break-all text-sm">{value}</p>
-                    </div>
-                  ))}
-                </div>
+                <p className="mt-5 max-w-3xl text-sm leading-7 text-ink-muted">{selectedNode.summary}</p>
+                <MetricGrid
+                  className="mt-6 border border-obsidian/15"
+                  columns={3}
+                  items={[
+                    { label: "Quantity", value: selectedNode.quantity ?? "—" },
+                    { label: "Timestamp", value: selectedNode.timestamp ?? "—" },
+                    { label: "Document", value: selectedNode.document ?? "—" },
+                  ]}
+                />
                 <div className="mt-6">
-                  <p className="mono-label text-machine">Record evidence</p>
+                  <p className="mono-label text-ink-muted">Record evidence</p>
                   <div className="mt-3 grid gap-x-8 gap-y-2 sm:grid-cols-2">
                     {selectedNode.details.map((detail) => (
                       <div key={`${detail.label}-${detail.value}`} className="flex justify-between gap-4 border-b border-obsidian/10 py-2 text-xs">
-                        <span className="text-machine">{detail.label}</span>
-                        <span className="text-right">{detail.value}</span>
+                        <span className="min-w-0 text-ink-muted">{detail.label}</span>
+                        <span className="min-w-0 break-all text-right">{detail.value}</span>
                       </div>
                     ))}
                   </div>
@@ -484,11 +489,11 @@ export function BatchDnaWorkspace({ initialBatches, initialTrace, initialIdentif
               </div>
             </div>
 
-            <div className="xl:col-span-4">
-              <div className="surface-dark h-full p-6 text-paper">
+            <div className="min-w-0 xl:col-span-4">
+              <div className="surface-dark h-full p-5 text-paper sm:p-6">
                 <div className="flex items-center gap-2">
                   <ShieldCheck className="h-4 w-4 text-signal" aria-hidden="true" />
-                  <p className="mono-label text-paper/50">Trace summary</p>
+                  <p className="mono-label text-paper-muted">04 / Trace summary</p>
                 </div>
                 <div className="mt-6 space-y-3 text-sm">
                   {[
@@ -505,16 +510,16 @@ export function BatchDnaWorkspace({ initialBatches, initialTrace, initialIdentif
                     ["Cost / packet", formatPaise(trace.summary.costPerPacketPaise ?? 0)],
                   ].map(([label, value]) => (
                     <div key={label} className="flex justify-between gap-4 border-b border-paper/10 pb-2">
-                      <span className="text-paper/50">{label}</span>
+                      <span className="min-w-0 text-paper-muted">{label}</span>
                       <span className="text-right tabular">{value}</span>
                     </div>
                   ))}
                 </div>
                 <div className="mt-6">
-                  <p className="mono-label text-paper/40">Customers</p>
+                  <p className="mono-label text-paper-muted">Customers</p>
                   <div className="mt-3 flex flex-wrap gap-2">
                     {trace.summary.customers.length === 0 ? (
-                      <span className="text-xs text-paper/45">No dispatch evidence yet</span>
+                      <span className="text-xs text-paper-muted">No dispatch evidence yet</span>
                     ) : (
                       trace.summary.customers.map((customer) => (
                         <Badge key={customer} variant="machine">{customer}</Badge>
@@ -523,13 +528,13 @@ export function BatchDnaWorkspace({ initialBatches, initialTrace, initialIdentif
                   </div>
                 </div>
                 <div className="mt-6">
-                  <p className="mono-label text-paper/40">Provenance gaps</p>
+                  <p className="mono-label text-paper-muted">Provenance gaps</p>
                   {trace.gaps.length === 0 ? (
-                    <p className="mt-3 text-xs text-paper/50">No missing source evidence detected.</p>
+                    <p className="mt-3 text-xs text-paper-muted">No missing source evidence detected.</p>
                   ) : (
                     <ul className="mt-3 space-y-2">
                       {trace.gaps.map((gap) => (
-                        <li key={gap} className="flex gap-2 text-xs leading-5 text-rust">
+                        <li key={gap} className="flex gap-2 text-xs leading-5 text-rust-ink">
                           <CircleDot className="mt-1 h-3 w-3 shrink-0" aria-hidden="true" />
                           {gap}
                         </li>

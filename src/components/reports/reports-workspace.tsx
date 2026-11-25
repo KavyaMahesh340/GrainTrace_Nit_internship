@@ -2,9 +2,13 @@
 
 import { useMemo, useState } from "react";
 import { Download, FileSpreadsheet, FileText, Printer, RefreshCw } from "lucide-react";
+import { Notice } from "@/components/system/notice";
+import { PageHeader } from "@/components/system/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { MetricGrid } from "@/components/ui/metric";
+import { TableFrame } from "@/components/ui/table-frame";
 import { formatPaise } from "@/domain";
 import type { ReportColumnKind, ReportDefinition, ReportKey } from "@/lib/workflows/reports";
 
@@ -31,6 +35,9 @@ type Filters = {
   category: string;
 };
 
+const fieldClass =
+  "h-11 w-full rounded-sm border border-obsidian/25 bg-paper px-3 text-sm text-obsidian focus-visible:border-forest focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest/25";
+
 function toFilters(report: ReportDefinition): Filters {
   return {
     dateFrom: report.filters.dateFrom ?? "",
@@ -54,6 +61,10 @@ function formatCell(value: string | number | null, kind: ReportColumnKind) {
   if (kind === "paise") return formatPaise(Number(value));
   if (kind === "basis_points") return `${(Number(value) / 100).toFixed(2)}%`;
   return String(value);
+}
+
+function isNumericKind(kind: ReportColumnKind) {
+  return kind === "paise" || kind === "integer" || kind === "basis_points";
 }
 
 export function ReportsWorkspace({ initialReport, catalog, options, canExport }: Props) {
@@ -93,69 +104,111 @@ export function ReportsWorkspace({ initialReport, catalog, options, canExport }:
 
   return (
     <div>
-      <header className="surface-dark px-6 py-10 text-paper lg:px-10">
-        <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
-          <div className="max-w-2xl">
-            <p className="mono-label text-signal">ACCOUNTABILITY / 13</p>
-            <h1 className="mt-3 text-4xl font-semibold tracking-tight">Reports & exports.</h1>
-            <p className="mt-3 text-sm leading-relaxed text-paper/65">
-              Ten operational views over the same posted records. Every export uses the filters shown below.
-            </p>
+      <PageHeader
+        code="ACCOUNTABILITY / 13"
+        title="Reports & exports."
+        description="Ten operational views over the same posted records. Every export uses the filters shown below."
+        footnote="Ten views · one filtered record set"
+        tone="ledger"
+        aside={
+          <div className="min-w-0">
+            <div className="grid grid-cols-2 gap-px border border-obsidian/20 bg-obsidian/10">
+              <div className="bg-paper p-4">
+                <p className="mono-label text-ink-muted">Catalog</p>
+                <p className="mt-2 font-mono text-2xl tabular">{catalog.length}</p>
+              </div>
+              <div className="bg-paper p-4">
+                <p className="mono-label text-ink-muted">Rows in view</p>
+                <p className="mt-2 font-mono text-2xl tabular">{report.rows.length}</p>
+              </div>
+            </div>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Badge variant="outline">CSV · XLSX · PDF</Badge>
+              <Badge variant={canExport ? "default" : "machine"}>
+                {canExport ? "Export enabled" : "View only"}
+              </Badge>
+            </div>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Badge variant="dark">10 reports</Badge>
-            <Badge variant="dark">CSV · XLSX · PDF</Badge>
+        }
+      />
+
+      <div className="page-frame py-10 sm:py-14">
+        {error ? <Notice tone="error" className="mb-8">{error}</Notice> : null}
+
+        <section className="border border-obsidian/15 bg-paper" aria-labelledby="reports-catalog">
+          <div className="flex flex-wrap items-end justify-between gap-4 border-b border-obsidian/15 px-5 py-4">
+            <div className="min-w-0">
+              <p className="mono-label text-rust-ink">01 / Report catalog</p>
+              <h2 id="reports-catalog" className="mt-2 text-xl font-semibold tracking-tight">
+                Select a view
+              </h2>
+            </div>
+            <span className="mono-caption text-ink-muted">{catalog.length} registered reports</span>
           </div>
-        </div>
-      </header>
-
-      <main className="space-y-8 px-6 py-8 lg:px-10">
-        {error ? <p className="border-l-2 border-rust bg-rust/10 px-3 py-2 text-sm text-rust">{error}</p> : null}
-
-        <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-          {catalog.map((item) => (
-            <button
-              key={item.key}
-              type="button"
-              onClick={() => void selectReport(item.key)}
-              className={`border p-4 text-left transition-colors ${
-                item.key === report.key
-                  ? "border-forest bg-pale-sage"
-                  : "border-obsidian/15 bg-paper hover:border-forest/50"
-              }`}
-            >
-              <p className="text-sm font-semibold">{item.label}</p>
-              <p className="mt-1 text-xs leading-relaxed text-machine">{item.description}</p>
-            </button>
-          ))}
+          <div className="grid gap-px bg-obsidian/10 sm:grid-cols-2 lg:grid-cols-5">
+            {catalog.map((item, index) => {
+              const active = item.key === report.key;
+              return (
+                <button
+                  key={item.key}
+                  type="button"
+                  onClick={() => void selectReport(item.key)}
+                  aria-pressed={active}
+                  className={`min-w-0 bg-paper p-4 text-left transition-colors ${
+                    active ? "bg-pale-sage" : "hover:bg-sage/40"
+                  }`}
+                >
+                  <span className="mono-label text-ink-muted">
+                    {String(index + 1).padStart(2, "0")}
+                  </span>
+                  <span className="mt-2 block text-sm font-semibold">{item.label}</span>
+                  <span className="mt-1 block text-xs leading-relaxed text-ink-muted">
+                    {item.description}
+                  </span>
+                  {active ? (
+                    <span className="mono-label mt-3 block text-rust-ink">In view</span>
+                  ) : null}
+                </button>
+              );
+            })}
+          </div>
         </section>
 
-        <section className="border border-obsidian/15 bg-paper p-5">
-          <div className="flex flex-wrap items-end gap-4">
-            <label>
-              <span className="mono-label text-machine">FROM</span>
+        <section className="mt-8 border border-obsidian/15 bg-paper" aria-labelledby="reports-filters">
+          <div className="flex flex-wrap items-end justify-between gap-4 border-b border-obsidian/15 px-5 py-4">
+            <div className="min-w-0">
+              <p className="mono-label text-rust-ink">02 / Filter parameters</p>
+              <h2 id="reports-filters" className="mt-2 text-xl font-semibold tracking-tight">
+                Narrow the record set
+              </h2>
+            </div>
+            <span className="mono-caption text-ink-muted">Applied on generate</span>
+          </div>
+          <div className="grid gap-4 p-5 sm:grid-cols-2 lg:grid-cols-5">
+            <label className="min-w-0">
+              <span className="mono-label mb-2 block text-ink-muted">FROM</span>
               <Input
                 type="date"
                 value={filters.dateFrom}
                 onChange={(event) => setFilters({ ...filters, dateFrom: event.target.value })}
-                className="mt-1"
+                className={fieldClass}
               />
             </label>
-            <label>
-              <span className="mono-label text-machine">TO</span>
+            <label className="min-w-0">
+              <span className="mono-label mb-2 block text-ink-muted">TO</span>
               <Input
                 type="date"
                 value={filters.dateTo}
                 onChange={(event) => setFilters({ ...filters, dateTo: event.target.value })}
-                className="mt-1"
+                className={fieldClass}
               />
             </label>
-            <label>
-              <span className="mono-label text-machine">CUSTOMER</span>
+            <label className="min-w-0">
+              <span className="mono-label mb-2 block text-ink-muted">CUSTOMER</span>
               <select
                 value={filters.customerId}
                 onChange={(event) => setFilters({ ...filters, customerId: event.target.value })}
-                className="mt-1 h-10 border border-obsidian/20 bg-transparent px-3 text-sm"
+                className={fieldClass}
               >
                 <option value="">All customers</option>
                 {options.customers.map((customer) => (
@@ -165,12 +218,12 @@ export function ReportsWorkspace({ initialReport, catalog, options, canExport }:
                 ))}
               </select>
             </label>
-            <label>
-              <span className="mono-label text-machine">PRODUCT</span>
+            <label className="min-w-0">
+              <span className="mono-label mb-2 block text-ink-muted">PRODUCT</span>
               <select
                 value={filters.productId}
                 onChange={(event) => setFilters({ ...filters, productId: event.target.value })}
-                className="mt-1 h-10 border border-obsidian/20 bg-transparent px-3 text-sm"
+                className={fieldClass}
               >
                 <option value="">All products</option>
                 {options.products.map((product) => (
@@ -180,12 +233,12 @@ export function ReportsWorkspace({ initialReport, catalog, options, canExport }:
                 ))}
               </select>
             </label>
-            <label>
-              <span className="mono-label text-machine">CATEGORY</span>
+            <label className="min-w-0">
+              <span className="mono-label mb-2 block text-ink-muted">CATEGORY</span>
               <select
                 value={filters.category}
                 onChange={(event) => setFilters({ ...filters, category: event.target.value })}
-                className="mt-1 h-10 border border-obsidian/20 bg-transparent px-3 text-sm"
+                className={fieldClass}
               >
                 <option value="">All categories</option>
                 {options.categories.map((category) => (
@@ -195,65 +248,76 @@ export function ReportsWorkspace({ initialReport, catalog, options, canExport }:
                 ))}
               </select>
             </label>
-            <Button onClick={() => void loadReport(report.key, filters)} disabled={busy}>
-              <RefreshCw className="h-4 w-4" /> Apply filters
-            </Button>
+            <div className="flex min-w-0 items-end sm:col-span-2 lg:col-span-5 lg:justify-end">
+              <Button onClick={() => void loadReport(report.key, filters)} disabled={busy}>
+                <RefreshCw className="h-4 w-4" aria-hidden="true" /> Apply filters
+              </Button>
+            </div>
           </div>
         </section>
 
-        <section>
-          <div className="mb-4 flex flex-wrap items-end justify-between gap-4">
-            <div>
-              <p className="mono-label text-machine">{activeCatalog.label.toUpperCase()}</p>
-              <h2 className="mt-1 text-2xl font-semibold">{report.label}</h2>
-              <p className="mt-1 text-sm text-machine">{report.description}</p>
+        <section className="mt-10" aria-labelledby="reports-output">
+          <div className="flex flex-wrap items-end justify-between gap-4 border-b border-obsidian/15 pb-4">
+            <div className="min-w-0">
+              <p className="mono-label text-rust-ink">03 / Report output</p>
+              <div className="mt-2 flex flex-wrap items-baseline gap-3">
+                <h2 id="reports-output" className="text-2xl font-semibold tracking-tight">
+                  {report.label}
+                </h2>
+                <span className="mono-caption text-ink-muted">{activeCatalog.label}</span>
+              </div>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-ink-muted">{report.description}</p>
             </div>
             {canExport ? (
-              <div className="flex flex-wrap gap-2">
+              <div className="flex min-w-0 flex-wrap gap-2">
                 <Button variant="outline" size="sm" asChild>
                   <a href={`/api/reports/${report.key}/export?format=csv&${exportQuery}`}>
-                    <FileText className="h-3 w-3" /> CSV
+                    <FileText className="h-3 w-3" aria-hidden="true" /> CSV
                   </a>
                 </Button>
                 <Button variant="outline" size="sm" asChild>
                   <a href={`/api/reports/${report.key}/export?format=xlsx&${exportQuery}`}>
-                    <FileSpreadsheet className="h-3 w-3" /> Excel
+                    <FileSpreadsheet className="h-3 w-3" aria-hidden="true" /> Excel
                   </a>
                 </Button>
                 <Button variant="outline" size="sm" asChild>
                   <a href={`/api/reports/${report.key}/export?format=pdf&${exportQuery}`}>
-                    <Printer className="h-3 w-3" /> PDF
+                    <Printer className="h-3 w-3" aria-hidden="true" /> PDF
                   </a>
                 </Button>
               </div>
             ) : (
               <Badge variant="machine">
-                <Download className="h-3 w-3" /> View only
+                <Download className="h-3 w-3" aria-hidden="true" /> View only
               </Badge>
             )}
           </div>
 
-          <div className="mb-4 flex flex-wrap gap-3">
-            {report.summaries.map((summary) => (
-              <div key={summary.label} className="border border-obsidian/15 bg-paper px-4 py-3">
-                <p className="mono-label text-machine">{summary.label.toUpperCase()}</p>
-                <p className="mt-1 font-mono text-lg">{summary.value}</p>
-              </div>
-            ))}
-          </div>
+          {report.summaries.length > 0 ? (
+            <MetricGrid
+              className="mt-5 border border-obsidian/15"
+              columns={4}
+              items={report.summaries.map((summary) => ({
+                label: summary.label.toUpperCase(),
+                value: summary.value,
+              }))}
+            />
+          ) : null}
 
-          <div className="overflow-x-auto border border-obsidian/15">
-            <table className="w-full min-w-[900px] text-left text-sm">
-              <thead className="surface-dark text-paper">
-                <tr>
+          <TableFrame
+            className="mt-6"
+            title="Report detail"
+            description={`${report.label} · generated ${report.generatedAt.slice(0, 10)}`}
+            actions={<span className="mono-caption text-ink-muted">{report.rows.length} rows</span>}
+          >
+            <table className="w-full min-w-[900px] border-collapse text-left text-sm">
+              <thead className="mono-label text-ink-muted">
+                <tr className="border-b border-obsidian/15">
                   {report.columns.map((column) => (
                     <th
                       key={column.key}
-                      className={`px-4 py-3 font-mono text-[10px] uppercase tracking-label ${
-                        column.kind === "paise" || column.kind === "integer" || column.kind === "basis_points"
-                          ? "text-right"
-                          : ""
-                      }`}
+                      scope="col"
+                      className={`py-3 pr-5 font-medium ${isNumericKind(column.kind) ? "text-right" : ""}`}
                     >
                       {column.label}
                     </th>
@@ -262,15 +326,11 @@ export function ReportsWorkspace({ initialReport, catalog, options, canExport }:
               </thead>
               <tbody>
                 {report.rows.map((row, index) => (
-                  <tr key={`${report.key}-${index}`} className="border-t border-obsidian/10 hover:bg-pale-sage/40">
+                  <tr key={`${report.key}-${index}`} className="data-row align-top">
                     {report.columns.map((column) => (
                       <td
                         key={column.key}
-                        className={`px-4 py-3 ${
-                          column.kind === "paise" || column.kind === "integer" || column.kind === "basis_points"
-                            ? "text-right font-mono"
-                            : ""
-                        }`}
+                        className={`py-3 pr-5 ${isNumericKind(column.kind) ? "text-right font-mono tabular" : ""}`}
                       >
                         {formatCell(row[column.key] ?? null, column.kind)}
                       </td>
@@ -279,16 +339,16 @@ export function ReportsWorkspace({ initialReport, catalog, options, canExport }:
                 ))}
                 {report.rows.length === 0 ? (
                   <tr>
-                    <td colSpan={report.columns.length} className="px-4 py-12 text-center text-machine">
+                    <td colSpan={report.columns.length} className="py-12 text-center text-ink-muted">
                       No records match this report view.
                     </td>
                   </tr>
                 ) : null}
               </tbody>
             </table>
-          </div>
+          </TableFrame>
         </section>
-      </main>
+      </div>
     </div>
   );
 }

@@ -10,23 +10,28 @@ export const metadata: Metadata = {
 
 export default function SessionExpiredPage() {
   return (
-    <main className="surface-dark flex min-h-screen flex-col bg-obsidian text-paper">
-      <div className="mx-auto flex w-full max-w-[1400px] flex-1 flex-col justify-center px-6 py-16 sm:px-10">
-        <div className="grid gap-12 lg:grid-cols-12">
-          <div className="lg:col-span-7">
-            <Clock3 className="h-6 w-6 text-signal" aria-hidden="true" />
-            <p className="mono-label mt-8 text-signal">Session state / Expired</p>
-            <h1 className="mt-5 max-w-4xl text-4xl font-semibold leading-[0.95] tracking-tightest sm:text-6xl">
+    <main className="surface-dark flex min-h-screen flex-col bg-obsidian text-paper" data-surface="dark">
+      <div className="preview-grid pointer-events-none fixed inset-0 opacity-20" aria-hidden="true" />
+      <div className="page-frame relative flex flex-1 flex-col justify-center py-12 sm:py-16">
+        <div className="editorial-grid">
+          <div className="lg:col-span-8">
+            <div className="flex items-center gap-3">
+              <span className="grid h-9 w-9 place-items-center border border-paper/25">
+                <Clock3 className="h-4 w-4 text-signal" aria-hidden="true" />
+              </span>
+              <p className="mono-label text-signal">Session state / Expired</p>
+            </div>
+            <h1 className="mt-6 max-w-4xl text-[clamp(2.5rem,6vw,5.5rem)] font-semibold leading-[0.9] tracking-tightest text-balance">
               Your operating session has closed.
             </h1>
-            <p className="mt-7 max-w-xl text-sm leading-7 text-paper/60">
+            <p className="mt-7 max-w-xl text-sm leading-7 text-paper-muted">
               Sessions expire after twelve hours, and revoked sessions are no longer accepted.
               Sign in again to continue from your role-specific landing view.
             </p>
           </div>
-          <div className="lg:col-span-5 lg:border-l lg:border-paper/15 lg:pl-10">
-            <p className="mono-label text-paper/40">Next action</p>
-            <p className="mt-4 text-lg leading-8 text-paper/85">
+          <aside className="lg:col-span-4 lg:border-l lg:border-paper/15 lg:pl-8">
+            <p className="mono-label text-paper-muted">Next action</p>
+            <p className="mt-4 text-lg leading-8 text-paper">
               Return to the sign-in console. Your saved work is unaffected.
             </p>
             <Link
@@ -36,7 +41,7 @@ export default function SessionExpiredPage() {
               Go to sign in
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </Link>
-          </div>
+          </aside>
         </div>
       </div>
     </main>

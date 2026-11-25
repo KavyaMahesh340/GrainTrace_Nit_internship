@@ -3,10 +3,15 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { FilePlus2, PackageCheck, Plus, Search, X } from "lucide-react";
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { MotionTabs } from "@/components/system/motion-tabs";
+import { Notice } from "@/components/system/notice";
+import { PageHeader } from "@/components/system/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { MetricGrid } from "@/components/ui/metric";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { TableFrame } from "@/components/ui/table-frame";
 import { formatPaise } from "@/domain";
 import type {
   PurchaseOrderDetail,
@@ -42,6 +47,13 @@ type Props = {
 };
 
 type Tab = "orders" | "receipts" | "suppliers";
+
+const tabItems: readonly { value: Tab; label: string; hint?: string }[] = [
+  { value: "orders", label: "Orders", hint: "Commitments" },
+  { value: "receipts", label: "Receipts", hint: "Ledger entries" },
+  { value: "suppliers", label: "Suppliers", hint: "Master" },
+];
+
 type PoLineDraft = {
   kind: "raw" | "packaging";
   materialId: number;
@@ -341,66 +353,51 @@ export function PurchasesWorkspace({ initialOrders, initialReceipts, suppliers, 
   }
 
   return (
-    <div className="mx-auto max-w-[1600px] px-5 py-10 sm:px-8 sm:py-14">
-      <div className="grid gap-8 border-b border-obsidian/15 pb-10 lg:grid-cols-12">
-        <div className="lg:col-span-8">
-          <p className="mono-label text-rust">03 / Procurement control desk</p>
-          <h1 className="mt-4 text-4xl font-semibold leading-none tracking-tightest sm:text-6xl">
-            Purchases
-          </h1>
-          <p className="mt-5 max-w-2xl text-sm leading-7 text-obsidian/60">
-            Orders are commitments. Stock appears only when a receipt is posted, with lot identity,
-            cost, and ledger source attached.
-          </p>
-        </div>
-        <div className="lg:col-span-4 lg:border-l lg:border-obsidian/15 lg:pl-8">
-          <div className="grid grid-cols-2 gap-px bg-obsidian/10">
-            <div className="bg-paper p-4">
-              <p className="mono-label text-machine">Open orders</p>
-              <p className="mt-2 font-mono text-2xl tabular">
-                {orders.filter((order) => !["received", "cancelled"].includes(order.status)).length}
-              </p>
+    <div>
+      <PageHeader
+        code="03 / Procurement control desk"
+        title="Purchases"
+        description="Orders are commitments. Stock appears only when a receipt is posted, with lot identity, cost, and ledger source attached."
+        footnote="Commitment → receipt → stock"
+        tone="light"
+        aside={
+          <div className="min-w-0">
+            <div className="grid grid-cols-2 gap-px border border-obsidian/15 bg-obsidian/10">
+              <div className="bg-paper p-4">
+                <p className="mono-label text-ink-muted">Open orders</p>
+                <p className="mt-2 font-mono text-2xl tabular">
+                  {orders.filter((order) => !["received", "cancelled"].includes(order.status)).length}
+                </p>
+              </div>
+              <div className="bg-paper p-4">
+                <p className="mono-label text-ink-muted">Receipts</p>
+                <p className="mt-2 font-mono text-2xl tabular">{receipts.length}</p>
+              </div>
             </div>
-            <div className="bg-paper p-4">
-              <p className="mono-label text-machine">Receipts</p>
-              <p className="mt-2 font-mono text-2xl tabular">{receipts.length}</p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {canManage ? (
+                <>
+                  <Button onClick={() => setPoOpen(true)}><FilePlus2 className="h-3.5 w-3.5" /> New order</Button>
+                  <Button variant="outline" onClick={() => setSupplierOpen(true)}><Plus className="h-3.5 w-3.5" /> Supplier</Button>
+                </>
+              ) : (
+                <p className="text-xs leading-6 text-ink-muted">Read-only access. Posting requires purchase management permission.</p>
+              )}
             </div>
           </div>
-          <div className="mt-4 flex flex-wrap gap-2">
-            {canManage ? (
-              <>
-                <Button onClick={() => setPoOpen(true)}><FilePlus2 className="h-3.5 w-3.5" /> New order</Button>
-                <Button variant="outline" onClick={() => setSupplierOpen(true)}><Plus className="h-3.5 w-3.5" /> Supplier</Button>
-              </>
-            ) : (
-              <p className="text-xs leading-6 text-obsidian/55">Read-only access. Posting requires purchase management permission.</p>
-            )}
-          </div>
-        </div>
-      </div>
+        }
+      />
 
-      {error ? <p className="mt-6 border border-rust/40 bg-rust/10 px-4 py-3 text-sm text-rust">{error}</p> : null}
-      {notice ? <p className="mt-6 border border-signal bg-signal/20 px-4 py-3 text-sm text-forest">{notice}</p> : null}
+      <div className="page-frame py-10 sm:py-14">
+      {error ? <Notice tone="error" className="mb-8">{error}</Notice> : null}
+      {notice ? <Notice tone="success" className="mb-8">{notice}</Notice> : null}
 
-      <div className="mt-8 flex flex-wrap items-center justify-between gap-4">
-        <div className="flex flex-wrap gap-1 border-b border-obsidian/15">
-          {(["orders", "receipts", "suppliers"] as Tab[]).map((item) => (
-            <button
-              key={item}
-              type="button"
-              onClick={() => setTab(item)}
-              className={`px-4 py-3 font-mono text-[10px] uppercase tracking-label transition-colors ${
-                tab === item ? "border-b-2 border-rust text-obsidian" : "text-machine hover:text-obsidian"
-              }`}
-            >
-              {item}
-            </button>
-          ))}
-        </div>
+      <div className="mt-2 flex flex-wrap items-end justify-between gap-4">
+        <MotionTabs label="Procurement views" value={tab} onChange={setTab} items={tabItems} />
         {tab === "orders" ? (
-          <div className="flex w-full flex-wrap gap-2 sm:w-auto">
-            <div className="relative min-w-[220px] flex-1">
-              <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-machine" aria-hidden="true" />
+          <div className="flex w-full flex-wrap items-center gap-2 border border-obsidian/15 bg-paper p-2 sm:w-auto">
+            <div className="relative min-w-[200px] flex-1">
+              <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-muted" aria-hidden="true" />
               <Input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
@@ -409,7 +406,7 @@ export function PurchasesWorkspace({ initialOrders, initialReceipts, suppliers, 
                 aria-label="Search purchase orders"
               />
             </div>
-            <select value={status} onChange={(event) => setStatus(event.target.value)} className={fieldClass()} aria-label="Filter by status">
+            <select value={status} onChange={(event) => setStatus(event.target.value)} className={`${fieldClass()} sm:w-40`} aria-label="Filter by status">
               <option value="all">All statuses</option>
               {["draft", "submitted", "approved", "partially_received", "received", "cancelled"].map((item) => (
                 <option key={item} value={item}>{item.replace("_", " ")}</option>
@@ -419,158 +416,178 @@ export function PurchasesWorkspace({ initialOrders, initialReceipts, suppliers, 
         ) : null}
       </div>
 
-      <div className="mt-6 border border-obsidian/15 bg-paper">
-        {tab === "orders" ? (
-          filteredOrders.length === 0 ? (
+      {tab === "orders" ? (
+        <TableFrame
+          className="mt-6"
+          title="Order book"
+          description="Commitments with delivery progress and value"
+          actions={<span className="mono-caption text-ink-muted">{filteredOrders.length} orders in view</span>}
+        >
+          {filteredOrders.length === 0 ? (
             <div className="px-6 py-16 text-center">
-              <p className="mono-label text-machine">No matching orders</p>
-              <p className="mt-3 text-sm text-obsidian/60">Adjust the search or create a draft order.</p>
+              <p className="mono-label text-ink-muted">No matching orders</p>
+              <p className="mt-3 text-sm text-ink-muted">Adjust the search or create a draft order.</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[820px] border-collapse text-left">
-                <thead>
-                  <tr className="mono-label text-machine">
-                    <th className="px-5 py-4 font-medium">Order</th>
-                    <th className="px-3 py-4 font-medium">Supplier</th>
-                    <th className="px-3 py-4 font-medium">Status</th>
-                    <th className="px-3 py-4 font-medium">Receipt progress</th>
-                    <th className="px-3 py-4 font-medium">Order date</th>
-                    <th className="px-5 py-4 text-right font-medium">Action</th>
+            <table className="w-full min-w-[820px] border-collapse text-left">
+              <thead>
+                <tr className="mono-label text-ink-muted">
+                  <th scope="col" className="px-5 py-4 font-medium">Order</th>
+                  <th scope="col" className="px-3 py-4 font-medium">Supplier</th>
+                  <th scope="col" className="px-3 py-4 font-medium">Status</th>
+                  <th scope="col" className="px-3 py-4 font-medium">Receipt progress</th>
+                  <th scope="col" className="px-3 py-4 font-medium">Order date</th>
+                  <th scope="col" className="px-5 py-4 text-right font-medium">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredOrders.map((order) => (
+                  <tr key={order.id} className="data-row">
+                    <td className="px-5 py-4">
+                      <button type="button" onClick={() => openDetail(order.orderNumber)} className="font-mono text-xs font-medium underline-offset-4 hover:underline">
+                        {order.orderNumber}
+                      </button>
+                      <p className="mono-label mt-1 text-ink-muted">{order.lineCount} lines · {formatPaise(order.totalAmountPaise)}</p>
+                    </td>
+                    <td className="px-3 py-4 text-sm">{order.supplierName}</td>
+                    <td className="px-3 py-4"><Badge variant={statusVariant(order.status)}>{order.status.replace("_", " ")}</Badge></td>
+                    <td className="px-3 py-4">
+                      <div
+                        className="meter-track w-28"
+                        role="meter"
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        aria-valuenow={order.status === "received" ? 100 : order.status === "partially_received" ? 55 : 0}
+                        aria-label={`${order.orderNumber} receipt progress`}
+                      >
+                        <div
+                          className="h-full bg-forest"
+                          style={{ width: `${order.status === "received" ? 100 : order.status === "partially_received" ? 55 : 0}%` }}
+                        />
+                      </div>
+                    </td>
+                    <td className="px-3 py-4 font-mono text-xs tabular text-ink-muted">{order.orderDate.slice(0, 10)}</td>
+                    <td className="px-5 py-4 text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button size="sm" variant="outline" onClick={() => openDetail(order.orderNumber)}>Inspect</Button>
+                        <Button
+                          size="sm"
+                          onClick={() => openReceipt(order)}
+                          disabled={!canManage || !["approved", "partially_received"].includes(order.status) || busy}
+                        >
+                          <PackageCheck className="h-3.5 w-3.5" /> Receive
+                        </Button>
+                      </div>
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {filteredOrders.map((order) => (
-                    <tr key={order.id} className="border-t border-obsidian/10 hover:bg-sage/20">
-                      <td className="px-5 py-4">
-                        <button type="button" onClick={() => openDetail(order.orderNumber)} className="font-mono text-xs font-medium underline-offset-4 hover:underline">
-                          {order.orderNumber}
-                        </button>
-                        <p className="mono-label mt-1 text-machine">{order.lineCount} lines · {formatPaise(order.totalAmountPaise)}</p>
-                      </td>
-                      <td className="px-3 py-4 text-sm">{order.supplierName}</td>
-                      <td className="px-3 py-4"><Badge variant={statusVariant(order.status)}>{order.status.replace("_", " ")}</Badge></td>
-                      <td className="px-3 py-4">
-                        <div className="h-1 w-28 bg-obsidian/10">
-                          <div
-                            className="h-full bg-forest"
-                            style={{ width: `${order.status === "received" ? 100 : order.status === "partially_received" ? 55 : 0}%` }}
-                          />
-                        </div>
-                      </td>
-                      <td className="px-3 py-4 font-mono text-xs tabular text-machine">{order.orderDate.slice(0, 10)}</td>
-                      <td className="px-5 py-4 text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button size="sm" variant="outline" onClick={() => openDetail(order.orderNumber)}>Inspect</Button>
-                          <Button
-                            size="sm"
-                            onClick={() => openReceipt(order)}
-                            disabled={!canManage || !["approved", "partially_received"].includes(order.status) || busy}
-                          >
-                            <PackageCheck className="h-3.5 w-3.5" /> Receive
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )
-        ) : null}
+                ))}
+              </tbody>
+            </table>
+          )}
+        </TableFrame>
+      ) : null}
 
-        {tab === "receipts" ? (
-          receipts.length === 0 ? (
+      {tab === "receipts" ? (
+        <TableFrame
+          className="mt-6"
+          title="Receipt ledger"
+          description="Posted stock entries with lot and exception counts"
+          actions={<span className="mono-caption text-ink-muted">{receipts.length} entries</span>}
+        >
+          {receipts.length === 0 ? (
             <div className="px-6 py-16 text-center">
-              <p className="mono-label text-machine">No receipts posted</p>
-              <p className="mt-3 text-sm text-obsidian/60">Approve an order, then record actual delivered quantities.</p>
+              <p className="mono-label text-ink-muted">No receipts posted</p>
+              <p className="mt-3 text-sm text-ink-muted">Approve an order, then record actual delivered quantities.</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[720px] border-collapse text-left">
-                <thead>
-                  <tr className="mono-label text-machine">
-                    <th className="px-5 py-4 font-medium">Receipt</th>
-                    <th className="px-3 py-4 font-medium">Order</th>
-                    <th className="px-3 py-4 font-medium">Received</th>
-                    <th className="px-3 py-4 font-medium">Accepted</th>
-                    <th className="px-3 py-4 font-medium">Exceptions</th>
+            <table className="w-full min-w-[720px] border-collapse text-left">
+              <thead>
+                <tr className="mono-label text-ink-muted">
+                  <th scope="col" className="px-5 py-4 font-medium">Receipt</th>
+                  <th scope="col" className="px-3 py-4 font-medium">Order</th>
+                  <th scope="col" className="px-3 py-4 font-medium">Received</th>
+                  <th scope="col" className="px-3 py-4 font-medium">Accepted</th>
+                  <th scope="col" className="px-3 py-4 font-medium">Exceptions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {receipts.map((receipt) => (
+                  <tr key={receipt.id} className="data-row">
+                    <td className="px-5 py-4 font-mono text-xs">{receipt.receiptNumber}</td>
+                    <td className="px-3 py-4 font-mono text-xs text-ink-muted">{receipt.orderNumber}</td>
+                    <td className="px-3 py-4 font-mono text-xs tabular">{receipt.receivedAt.slice(0, 10)}</td>
+                    <td className="px-3 py-4 font-mono text-xs tabular">{receipt.acceptedQuantity}</td>
+                    <td className="px-3 py-4 font-mono text-xs tabular text-rust-ink">
+                      {receipt.damagedQuantity} damaged / {receipt.rejectedQuantity} rejected
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {receipts.map((receipt) => (
-                    <tr key={receipt.id} className="border-t border-obsidian/10 hover:bg-sage/20">
-                      <td className="px-5 py-4 font-mono text-xs">{receipt.receiptNumber}</td>
-                      <td className="px-3 py-4 font-mono text-xs text-machine">{receipt.orderNumber}</td>
-                      <td className="px-3 py-4 font-mono text-xs tabular">{receipt.receivedAt.slice(0, 10)}</td>
-                      <td className="px-3 py-4 font-mono text-xs tabular">{receipt.acceptedQuantity}</td>
-                      <td className="px-3 py-4 font-mono text-xs tabular text-rust">
-                        {receipt.damagedQuantity} damaged / {receipt.rejectedQuantity} rejected
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )
-        ) : null}
+                ))}
+              </tbody>
+            </table>
+          )}
+        </TableFrame>
+      ) : null}
 
-        {tab === "suppliers" ? (
-          supplierRows.length === 0 ? (
+      {tab === "suppliers" ? (
+        <TableFrame
+          className="mt-6"
+          title="Supplier master"
+          description="Approved sources and contact points"
+          actions={<span className="mono-caption text-ink-muted">{supplierRows.length} suppliers</span>}
+        >
+          {supplierRows.length === 0 ? (
             <div className="px-6 py-16 text-center">
-              <p className="mono-label text-machine">No suppliers</p>
-              <p className="mt-3 text-sm text-obsidian/60">Add a supplier before creating purchase orders.</p>
+              <p className="mono-label text-ink-muted">No suppliers</p>
+              <p className="mt-3 text-sm text-ink-muted">Add a supplier before creating purchase orders.</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[640px] border-collapse text-left">
-                <thead>
-                  <tr className="mono-label text-machine">
-                    <th className="px-5 py-4 font-medium">Code</th>
-                    <th className="px-3 py-4 font-medium">Supplier</th>
-                    <th className="px-3 py-4 font-medium">Contact</th>
-                    <th className="px-3 py-4 font-medium">Location</th>
+            <table className="w-full min-w-[640px] border-collapse text-left">
+              <thead>
+                <tr className="mono-label text-ink-muted">
+                  <th scope="col" className="px-5 py-4 font-medium">Code</th>
+                  <th scope="col" className="px-3 py-4 font-medium">Supplier</th>
+                  <th scope="col" className="px-3 py-4 font-medium">Contact</th>
+                  <th scope="col" className="px-3 py-4 font-medium">Location</th>
+                </tr>
+              </thead>
+              <tbody>
+                {supplierRows.map((supplier) => (
+                  <tr key={supplier.id} className="data-row">
+                    <td className="px-5 py-4 font-mono text-xs">{supplier.code}</td>
+                    <td className="px-3 py-4 text-sm">{supplier.name}</td>
+                    <td className="px-3 py-4 text-xs text-ink-muted">{supplier.contactName || supplier.email || supplier.phone || "—"}</td>
+                    <td className="px-3 py-4 text-xs text-ink-muted">{supplier.city || "—"}</td>
                   </tr>
-                </thead>
-                <tbody>
-                  {supplierRows.map((supplier) => (
-                    <tr key={supplier.id} className="border-t border-obsidian/10 hover:bg-sage/20">
-                      <td className="px-5 py-4 font-mono text-xs">{supplier.code}</td>
-                      <td className="px-3 py-4 text-sm">{supplier.name}</td>
-                      <td className="px-3 py-4 text-xs text-obsidian/60">{supplier.contactName || supplier.email || supplier.phone || "—"}</td>
-                      <td className="px-3 py-4 text-xs text-obsidian/60">{supplier.city || "—"}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )
-        ) : null}
-      </div>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </TableFrame>
+      ) : null}
 
       {poOpen ? (
-        <section className="mt-8 border border-obsidian/20 bg-sage/20 p-5 sm:p-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="mono-label text-rust">New commitment</p>
-              <h2 className="mt-2 text-2xl font-semibold tracking-tight">Purchase order</h2>
+        <section className="mt-10 border border-obsidian/20 bg-sage/20" aria-labelledby="purchases-order-form">
+          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-obsidian/15 px-5 py-5 sm:px-8">
+            <div className="min-w-0">
+              <p className="mono-label text-rust-ink">04 / New commitment</p>
+              <h2 id="purchases-order-form" className="mt-2 text-2xl font-semibold tracking-tight">Purchase order</h2>
             </div>
             <Button variant="ghost" size="icon" onClick={() => setPoOpen(false)} aria-label="Close order form"><X className="h-4 w-4" /></Button>
           </div>
-          <form onSubmit={submitPo} className="mt-6 space-y-5">
+          <form onSubmit={submitPo} className="space-y-5 p-5 sm:p-8">
             <div className="grid gap-4 sm:grid-cols-4">
-              <label className="space-y-2"><span className="mono-label text-machine">Order number</span><Input required pattern="[A-Za-z0-9_-]{2,64}" value={poDraft.orderNumber} onChange={(event) => setPoDraft({ ...poDraft, orderNumber: event.target.value })} /></label>
-              <label className="space-y-2"><span className="mono-label text-machine">Supplier</span><select required className={fieldClass()} value={poDraft.supplierId} onChange={(event) => setPoDraft({ ...poDraft, supplierId: event.target.value })}>{supplierRows.map((supplier) => <option key={supplier.id} value={supplier.id}>{supplier.name}</option>)}</select></label>
-              <label className="space-y-2"><span className="mono-label text-machine">Order date</span><Input required type="date" value={poDraft.orderDate} onChange={(event) => setPoDraft({ ...poDraft, orderDate: event.target.value })} /></label>
-              <label className="space-y-2"><span className="mono-label text-machine">Expected date</span><Input type="date" value={poDraft.expectedDate} onChange={(event) => setPoDraft({ ...poDraft, expectedDate: event.target.value })} /></label>
+              <label className="min-w-0 space-y-2"><span className="mono-label text-ink-muted">Order number</span><Input required pattern="[A-Za-z0-9_-]{2,64}" value={poDraft.orderNumber} onChange={(event) => setPoDraft({ ...poDraft, orderNumber: event.target.value })} /></label>
+              <label className="min-w-0 space-y-2"><span className="mono-label text-ink-muted">Supplier</span><select required className={fieldClass()} value={poDraft.supplierId} onChange={(event) => setPoDraft({ ...poDraft, supplierId: event.target.value })}>{supplierRows.map((supplier) => <option key={supplier.id} value={supplier.id}>{supplier.name}</option>)}</select></label>
+              <label className="min-w-0 space-y-2"><span className="mono-label text-ink-muted">Order date</span><Input required type="date" value={poDraft.orderDate} onChange={(event) => setPoDraft({ ...poDraft, orderDate: event.target.value })} /></label>
+              <label className="min-w-0 space-y-2"><span className="mono-label text-ink-muted">Expected date</span><Input type="date" value={poDraft.expectedDate} onChange={(event) => setPoDraft({ ...poDraft, expectedDate: event.target.value })} /></label>
             </div>
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <p className="mono-label text-machine">Order lines</p>
+                <p className="mono-label text-ink-muted">Order lines</p>
                 <Button type="button" size="sm" variant="outline" onClick={() => setPoDraft({ ...poDraft, lines: [...poDraft.lines, { kind: "raw", materialId: materials[0]?.id ?? 0, quantity: "", unitCostPaise: "" }] })}><Plus className="h-3.5 w-3.5" /> Line</Button>
               </div>
               {poDraft.lines.map((line, index) => (
-                <div key={index} className="grid gap-3 border border-obsidian/10 bg-paper p-3 sm:grid-cols-5">
+                <div key={index} className="grid min-w-0 gap-3 border border-obsidian/10 bg-paper p-3 sm:grid-cols-5">
                   <select className={fieldClass()} value={line.kind} onChange={(event) => {
                     const kind = event.target.value as "raw" | "packaging";
                     const first = materials.find((material) => material.kind === kind);
@@ -594,27 +611,27 @@ export function PurchasesWorkspace({ initialOrders, initialReceipts, suppliers, 
       ) : null}
 
       {receiptOpen ? (
-        <section className="mt-8 border border-obsidian/20 bg-sage/20 p-5 sm:p-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="mono-label text-rust">Goods receipt</p>
-              <h2 className="mt-2 text-2xl font-semibold tracking-tight">{receiptDraft.orderNumber}</h2>
+        <section className="mt-10 border border-obsidian/20 bg-sage/20" aria-labelledby="purchases-receipt-form">
+          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-obsidian/15 px-5 py-5 sm:px-8">
+            <div className="min-w-0">
+              <p className="mono-label text-rust-ink">05 / Goods receipt</p>
+              <h2 id="purchases-receipt-form" className="mt-2 text-2xl font-semibold tracking-tight">{receiptDraft.orderNumber}</h2>
             </div>
             <Button variant="ghost" size="icon" onClick={() => setReceiptOpen(false)} aria-label="Close receipt form"><X className="h-4 w-4" /></Button>
           </div>
-          <form onSubmit={submitReceipt} className="mt-6 space-y-5">
+          <form onSubmit={submitReceipt} className="space-y-5 p-5 sm:p-8">
             <div className="grid gap-4 sm:grid-cols-3">
-              <label className="space-y-2"><span className="mono-label text-machine">Receipt number</span><Input required pattern="[A-Za-z0-9_-]{2,64}" value={receiptDraft.receiptNumber} onChange={(event) => setReceiptDraft({ ...receiptDraft, receiptNumber: event.target.value })} /></label>
-              <label className="space-y-2"><span className="mono-label text-machine">Received at</span><Input required type="date" value={receiptDraft.receivedAt} onChange={(event) => setReceiptDraft({ ...receiptDraft, receivedAt: event.target.value })} /></label>
-              <label className="space-y-2"><span className="mono-label text-machine">Notes</span><Input value={receiptDraft.notes} onChange={(event) => setReceiptDraft({ ...receiptDraft, notes: event.target.value })} /></label>
+              <label className="min-w-0 space-y-2"><span className="mono-label text-ink-muted">Receipt number</span><Input required pattern="[A-Za-z0-9_-]{2,64}" value={receiptDraft.receiptNumber} onChange={(event) => setReceiptDraft({ ...receiptDraft, receiptNumber: event.target.value })} /></label>
+              <label className="min-w-0 space-y-2"><span className="mono-label text-ink-muted">Received at</span><Input required type="date" value={receiptDraft.receivedAt} onChange={(event) => setReceiptDraft({ ...receiptDraft, receivedAt: event.target.value })} /></label>
+              <label className="min-w-0 space-y-2"><span className="mono-label text-ink-muted">Notes</span><Input value={receiptDraft.notes} onChange={(event) => setReceiptDraft({ ...receiptDraft, notes: event.target.value })} /></label>
             </div>
             <div className="space-y-3">
               {receiptDraft.lines.length === 0 ? (
-                <p className="border border-obsidian/15 bg-paper px-4 py-6 text-sm text-obsidian/60">This order has no remaining quantity to receive.</p>
+                <p className="border border-obsidian/15 bg-paper px-4 py-6 text-sm text-ink-muted">This order has no remaining quantity to receive.</p>
               ) : null}
               {receiptDraft.lines.map((line, index) => (
-                <div key={line.sourceLineId} className="grid gap-3 border border-obsidian/10 bg-paper p-3 sm:grid-cols-7">
-                  <div className="sm:col-span-7"><p className="mono-label text-machine">Line {line.sourceLineId} · {line.remaining} remaining {line.unit}</p></div>
+                <div key={line.sourceLineId} className="grid min-w-0 gap-3 border border-obsidian/10 bg-paper p-3 sm:grid-cols-7">
+                  <div className="sm:col-span-7"><p className="mono-label text-ink-muted">Line {line.sourceLineId} · {line.remaining} remaining {line.unit}</p></div>
                   <Input required type="number" min={1} step={1} placeholder="Accepted" value={line.acceptedQuantity} onChange={(event) => setReceiptDraft({ ...receiptDraft, lines: receiptDraft.lines.map((item, itemIndex) => itemIndex === index ? { ...item, acceptedQuantity: event.target.value } : item) })} />
                   <Input required type="number" min={0} step={1} placeholder="Damaged" value={line.damagedQuantity} onChange={(event) => setReceiptDraft({ ...receiptDraft, lines: receiptDraft.lines.map((item, itemIndex) => itemIndex === index ? { ...item, damagedQuantity: event.target.value } : item) })} />
                   <Input required type="number" min={0} step={1} placeholder="Rejected" value={line.rejectedQuantity} onChange={(event) => setReceiptDraft({ ...receiptDraft, lines: receiptDraft.lines.map((item, itemIndex) => itemIndex === index ? { ...item, rejectedQuantity: event.target.value } : item) })} />
@@ -630,18 +647,21 @@ export function PurchasesWorkspace({ initialOrders, initialReceipts, suppliers, 
       ) : null}
 
       {supplierOpen ? (
-        <section className="mt-8 border border-obsidian/20 bg-sage/20 p-5 sm:p-8">
-          <div className="flex items-center justify-between">
-            <div><p className="mono-label text-rust">Supplier master</p><h2 className="mt-2 text-2xl font-semibold tracking-tight">Add supplier</h2></div>
+        <section className="mt-10 border border-obsidian/20 bg-sage/20" aria-labelledby="purchases-supplier-form">
+          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-obsidian/15 px-5 py-5 sm:px-8">
+            <div className="min-w-0">
+              <p className="mono-label text-rust-ink">06 / Supplier master</p>
+              <h2 id="purchases-supplier-form" className="mt-2 text-2xl font-semibold tracking-tight">Add supplier</h2>
+            </div>
             <Button variant="ghost" size="icon" onClick={() => setSupplierOpen(false)} aria-label="Close supplier form"><X className="h-4 w-4" /></Button>
           </div>
-          <form onSubmit={submitSupplier} className="mt-6 grid gap-4 sm:grid-cols-3">
-            <label className="space-y-2"><span className="mono-label text-machine">Code</span><Input required pattern="[A-Za-z0-9_-]{2,64}" value={supplierDraft.code} onChange={(event) => setSupplierDraft({ ...supplierDraft, code: event.target.value })} /></label>
-            <label className="space-y-2"><span className="mono-label text-machine">Name</span><Input required value={supplierDraft.name} onChange={(event) => setSupplierDraft({ ...supplierDraft, name: event.target.value })} /></label>
-            <label className="space-y-2"><span className="mono-label text-machine">Contact</span><Input value={supplierDraft.contactName} onChange={(event) => setSupplierDraft({ ...supplierDraft, contactName: event.target.value })} /></label>
-            <label className="space-y-2"><span className="mono-label text-machine">Email</span><Input type="email" value={supplierDraft.email} onChange={(event) => setSupplierDraft({ ...supplierDraft, email: event.target.value })} /></label>
-            <label className="space-y-2"><span className="mono-label text-machine">Phone</span><Input value={supplierDraft.phone} onChange={(event) => setSupplierDraft({ ...supplierDraft, phone: event.target.value })} /></label>
-            <label className="space-y-2"><span className="mono-label text-machine">City</span><Input value={supplierDraft.city} onChange={(event) => setSupplierDraft({ ...supplierDraft, city: event.target.value })} /></label>
+          <form onSubmit={submitSupplier} className="grid gap-4 p-5 sm:grid-cols-3 sm:p-8">
+            <label className="min-w-0 space-y-2"><span className="mono-label text-ink-muted">Code</span><Input required pattern="[A-Za-z0-9_-]{2,64}" value={supplierDraft.code} onChange={(event) => setSupplierDraft({ ...supplierDraft, code: event.target.value })} /></label>
+            <label className="min-w-0 space-y-2"><span className="mono-label text-ink-muted">Name</span><Input required value={supplierDraft.name} onChange={(event) => setSupplierDraft({ ...supplierDraft, name: event.target.value })} /></label>
+            <label className="min-w-0 space-y-2"><span className="mono-label text-ink-muted">Contact</span><Input value={supplierDraft.contactName} onChange={(event) => setSupplierDraft({ ...supplierDraft, contactName: event.target.value })} /></label>
+            <label className="min-w-0 space-y-2"><span className="mono-label text-ink-muted">Email</span><Input type="email" value={supplierDraft.email} onChange={(event) => setSupplierDraft({ ...supplierDraft, email: event.target.value })} /></label>
+            <label className="min-w-0 space-y-2"><span className="mono-label text-ink-muted">Phone</span><Input value={supplierDraft.phone} onChange={(event) => setSupplierDraft({ ...supplierDraft, phone: event.target.value })} /></label>
+            <label className="min-w-0 space-y-2"><span className="mono-label text-ink-muted">City</span><Input value={supplierDraft.city} onChange={(event) => setSupplierDraft({ ...supplierDraft, city: event.target.value })} /></label>
             <div className="sm:col-span-3"><Button type="submit" disabled={busy}>Add supplier</Button></div>
           </form>
         </section>
@@ -649,19 +669,23 @@ export function PurchasesWorkspace({ initialOrders, initialReceipts, suppliers, 
 
       <Sheet open={detailOpen} onOpenChange={setDetailOpen}>
         <SheetContent side="right" className="sm:max-w-2xl">
-          <SheetHeader>
-            <p className="mono-label text-rust">Purchase order</p>
+          <SheetHeader className="border-b border-paper/10">
+            <p className="mono-label text-rust-ink">Purchase order</p>
             <SheetTitle className="text-2xl">{detail?.orderNumber ?? "Loading"}</SheetTitle>
             <SheetDescription>{detail ? `${detail.supplierName} · ${detail.orderDate.slice(0, 10)}` : "Fetching document"}</SheetDescription>
           </SheetHeader>
           <div className="flex-1 overflow-y-auto px-6 pb-8">
             {detail ? (
               <>
-                <div className="grid grid-cols-3 gap-px bg-paper/10">
-                  <div className="bg-obsidian p-4"><p className="mono-label text-paper/45">Status</p><p className="mt-2 font-mono text-sm">{detail.status.replace("_", " ")}</p></div>
-                  <div className="bg-obsidian p-4"><p className="mono-label text-paper/45">Value</p><p className="mt-2 font-mono text-sm">{formatPaise(detail.totalAmountPaise)}</p></div>
-                  <div className="bg-obsidian p-4"><p className="mono-label text-paper/45">Lines</p><p className="mt-2 font-mono text-sm">{detail.lines.length}</p></div>
-                </div>
+                <MetricGrid
+                  className="mt-6 border border-paper/10"
+                  columns={3}
+                  items={[
+                    { label: "Status", value: detail.status.replace("_", " "), tone: "dark" },
+                    { label: "Value", value: formatPaise(detail.totalAmountPaise), tone: "dark" },
+                    { label: "Lines", value: String(detail.lines.length), tone: "dark" },
+                  ]}
+                />
                 {canManage && nextStatuses(detail.status).length > 0 ? (
                   <div className="mt-5 flex flex-wrap gap-2">
                     {nextStatuses(detail.status).map((statusValue) => (
@@ -674,25 +698,26 @@ export function PurchasesWorkspace({ initialOrders, initialReceipts, suppliers, 
                 <div className="mt-6 divide-y divide-paper/10 border-y border-paper/10">
                   {detail.lines.map((line) => (
                     <div key={line.id} className="flex items-start justify-between gap-4 py-4">
-                      <div>
+                      <div className="min-w-0">
                         <p className="font-mono text-xs">{line.code} · {line.name}</p>
-                        <p className="mono-label mt-1 text-paper/45">{line.kind} · unit cost {formatPaise(line.unitCostPaise)}</p>
+                        <p className="mono-label mt-1 text-paper-muted">{line.kind} · unit cost {formatPaise(line.unitCostPaise)}</p>
                       </div>
-                      <div className="text-right">
+                      <div className="shrink-0 text-right">
                         <p className="font-mono text-xs tabular">{line.receivedQuantity} / {line.quantity}</p>
-                        <p className="mono-label mt-1 text-paper/45">{line.unit} received</p>
+                        <p className="mono-label mt-1 text-paper-muted">{line.unit} received</p>
                       </div>
                     </div>
                   ))}
                 </div>
-                <p className="mono-label mt-6 text-paper/45">Source: purchase order {detail.orderNumber}</p>
+                <p className="mono-label mt-6 text-paper-muted">Source: purchase order {detail.orderNumber}</p>
               </>
             ) : (
-              <p className="mt-8 text-sm text-paper/60">Loading purchase order…</p>
+              <p className="mt-8 text-sm text-paper-muted">Loading purchase order…</p>
             )}
           </div>
         </SheetContent>
       </Sheet>
+      </div>
     </div>
   );
 }

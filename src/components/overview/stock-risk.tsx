@@ -5,8 +5,8 @@ import type { PreviewSnapshot, StockState } from "@/lib/domain/preview";
 import { cn } from "@/lib/utils";
 
 const stateStyles: Record<StockState, { label: string; bar: string; text: string }> = {
-  critical: { label: "Critical", bar: "bg-rust", text: "text-rust" },
-  watch: { label: "Watch", bar: "bg-[#D8A53B]", text: "text-[#9A7020]" },
+  critical: { label: "Critical", bar: "bg-rust", text: "text-rust-ink" },
+  watch: { label: "Watch", bar: "bg-signal ring-1 ring-forest/30", text: "text-forest" },
   stable: { label: "Stable", bar: "bg-forest", text: "text-forest" },
 };
 
@@ -15,11 +15,11 @@ export function StockRisk({ stock }: { stock: PreviewSnapshot["stock"] }) {
     <section className="border-b border-obsidian/15 px-5 py-10 sm:px-8 sm:py-12">
       <div className="mx-auto grid max-w-[1600px] gap-8 lg:grid-cols-12">
         <div className="lg:col-span-4">
-          <p className="mono-label text-rust">04 / Stock risk</p>
+          <p className="mono-label text-rust-ink">04 / Stock risk</p>
           <h2 className="mt-4 text-2xl font-semibold leading-tight tracking-tight sm:text-3xl">
             Cover, not just quantity.
           </h2>
-          <p className="mt-5 max-w-sm text-xs leading-6 text-obsidian/55">
+          <p className="mt-5 max-w-sm text-xs leading-6 text-ink-muted">
             Preview days-cover values are illustrative and use no live consumption calculation.
           </p>
           <Link
@@ -41,7 +41,7 @@ export function StockRisk({ stock }: { stock: PreviewSnapshot["stock"] }) {
               >
                 <div>
                   <p className="text-sm font-medium">{item.material}</p>
-                  <p className="mono-label mt-1 text-machine">{item.code}</p>
+                  <p className="mono-label mt-1 text-ink-muted">{item.code}</p>
                 </div>
                 <div>
                   <p className="font-mono text-xs tabular">

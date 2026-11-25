@@ -16,7 +16,13 @@ const config: Config = {
         machine: "#888E87",
         rust: "#C65D40",
         sage: "#DADFD4",
+        "pale-sage": "#DADFD4",
         forest: "#243D31",
+        "ink-muted": "#4B534C",
+        "ink-subtle": "#5E655E",
+        "paper-muted": "#C6CDC4",
+        "rust-ink": "#9B3E25",
+        line: "#D6D8D0",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         card: {
@@ -54,6 +60,19 @@ const config: Config = {
       fontFamily: {
         sans: ["var(--font-geist-sans)", "Inter", "system-ui", "sans-serif"],
         mono: ["var(--font-geist-mono)", "ui-monospace", "monospace"],
+      },
+      fontSize: {
+        label: ["0.6875rem", { lineHeight: "1rem", letterSpacing: "0.18em" }],
+        caption: ["0.75rem", { lineHeight: "1.25rem", letterSpacing: "0.02em" }],
+        section: ["1.75rem", { lineHeight: "2rem", letterSpacing: "-0.035em" }],
+        display: ["clamp(2.75rem, 7.4vw, 7rem)", { lineHeight: "0.88", letterSpacing: "-0.06em" }],
+      },
+      backgroundImage: {
+        "fine-grid":
+          "linear-gradient(to right, rgba(23,26,24,0.055) 1px, transparent 1px), linear-gradient(to bottom, rgba(23,26,24,0.055) 1px, transparent 1px)",
+      },
+      transitionTimingFunction: {
+        instrument: "cubic-bezier(0.22, 1, 0.36, 1)",
       },
       borderRadius: {
         lg: "0.3rem",

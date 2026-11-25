@@ -39,16 +39,19 @@ export function ConnectionStatus() {
 
   return (
     <div
-      className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-label text-paper/60"
+      role="status"
+      aria-live="polite"
+      data-state={isOnline ? "online" : "offline"}
+      className="flex items-center gap-2 border border-paper/20 px-2.5 py-1.5 font-mono text-[10px] uppercase tracking-label text-paper-muted"
       title="Connection state and persistent offline order queue"
     >
       {isOnline ? (
-        <Wifi className="h-3.5 w-3.5" aria-hidden="true" />
+        <Wifi className="h-3.5 w-3.5 text-signal" aria-hidden="true" />
       ) : (
         <WifiOff className="h-3.5 w-3.5 text-signal" aria-hidden="true" />
       )}
       <span>{isOnline ? "Online" : "Offline"}</span>
-      <span className="text-paper/25">/</span>
+      <span className="text-paper-muted" aria-hidden="true">/</span>
       <span>Queue {summary.pending}</span>
       {summary.failed > 0 ? (
         <span className="flex items-center gap-1 text-signal">

@@ -33,9 +33,12 @@ export function MobileNav({ navigationGroups }: { navigationGroups: NavigationGr
           <SheetDescription>GRAINTRACE / MATERIAL JOURNEY</SheetDescription>
         </SheetHeader>
         <div className="flex-1 overflow-y-auto px-6 pb-8">
-          {navigationGroups.map((group) => (
+          {navigationGroups.map((group, groupIndex) => (
             <section key={group.title} className="pt-7">
-              <p className="mono-label text-paper/40">{group.title}</p>
+              <div className="flex items-center gap-3">
+                <p className="mono-label text-signal">{String(groupIndex + 1).padStart(2, "0")}</p>
+                <p className="mono-label text-paper-muted">{group.title}</p>
+              </div>
               <ul className="mt-3">
                 {group.items.map((item) => {
                   const isActive = pathname === item.href;
@@ -47,14 +50,14 @@ export function MobileNav({ navigationGroups }: { navigationGroups: NavigationGr
                         aria-current={isActive ? "page" : undefined}
                         className={cn(
                           "flex items-center justify-between gap-4 py-4 text-sm transition-colors",
-                          isActive ? "text-signal" : "text-paper/80 hover:text-paper",
+                          isActive ? "text-signal" : "text-paper-muted hover:text-paper",
                         )}
                       >
                         <span className="flex items-baseline gap-3">
-                          <span className="font-mono text-[10px] text-paper/35">{item.index}</span>
+                          <span className="font-mono text-[10px] text-paper-muted">{item.index}</span>
                           <span>{item.label}</span>
                         </span>
-                        <span className="flex items-center gap-2 font-mono text-[9px] uppercase tracking-label text-paper/35">
+                        <span className="flex items-center gap-2 border border-paper/20 px-2 py-1 font-mono text-[9px] uppercase tracking-label text-paper-muted">
                           {item.phase}
                           <ArrowUpRight className="h-3 w-3" aria-hidden="true" />
                         </span>

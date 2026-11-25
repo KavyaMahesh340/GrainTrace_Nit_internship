@@ -2,10 +2,13 @@
 
 import { useMemo, useState } from "react";
 import { ArrowUpRight, Banknote, Receipt, RefreshCw, RotateCcw, Search } from "lucide-react";
+import { Notice } from "@/components/system/notice";
+import { PageHeader } from "@/components/system/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { TableFrame } from "@/components/ui/table-frame";
 import { formatPaise } from "@/domain";
 import type { CollectionsDashboard, CollectionRow, PaymentSummary } from "@/lib/workflows/payments";
 import { salesApiRequest, salesFieldClass, salesLabelClass, salesStatusVariant } from "./sales-shared";
@@ -174,122 +177,131 @@ export function CollectionsWorkspace({
 
   return (
     <div>
-      <header className="surface-dark px-6 py-10 text-paper lg:px-10">
-        <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
-          <div className="max-w-2xl">
-            <p className="mono-label text-signal">MATERIAL JOURNEY / 10</p>
-            <h1 className="mt-3 text-4xl font-semibold tracking-tight">Collections & reconciliation.</h1>
-            <p className="mt-3 text-sm leading-relaxed text-paper/65">
-              Receipts close tax documents. Corrections stay auditable as reversing entries, never deletions.
-            </p>
-          </div>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <Metric label="DUE" value={formatPaise(dashboard.duePaise)} />
-            <Metric label="OVERDUE" value={formatPaise(dashboard.overduePaise)} />
-            <Metric label="COLLECTED" value={formatPaise(dashboard.collectedPaise)} />
-            <Metric label="CORRECTED" value={formatPaise(dashboard.correctionPaise)} />
-          </div>
-        </div>
-      </header>
-
-      <main className="space-y-8 px-6 py-8 lg:px-10">
-        {error ? <p className="border-l-2 border-rust bg-rust/10 px-3 py-2 text-sm text-rust">{error}</p> : null}
-        {notice ? <p className="border-l-2 border-signal bg-signal/15 px-3 py-2 text-sm text-forest">{notice}</p> : null}
-
-        <section className="grid gap-4 lg:grid-cols-2">
-          <div className="border border-obsidian/15 bg-paper p-5">
-            <p className="mono-label text-machine">AGING BUCKETS</p>
-            <div className="mt-4 space-y-3">
-              {dashboard.aging.map((bucket) => (
-                <div key={bucket.bucket} className="flex items-center justify-between gap-4">
-                  <div>
-                    <p className="text-sm font-medium">{bucket.label}</p>
-                    <p className="font-mono text-[10px] text-machine">{bucket.invoiceCount} invoices</p>
-                  </div>
-                  <p className="font-mono text-sm">{formatPaise(bucket.outstandingPaise)}</p>
-                </div>
-              ))}
+      <PageHeader
+        code="MATERIAL JOURNEY / 10"
+        title="Collections & reconciliation."
+        description="Receipts close tax documents. Corrections stay auditable as reversing entries, never deletions."
+        footnote="Cash register · every receipt has a source document"
+        tone="instrument"
+        aside={
+          <div className="min-w-0">
+            <div className="grid grid-cols-2 gap-px border border-paper/10 bg-paper/10">
+              <Metric label="DUE" value={formatPaise(dashboard.duePaise)} />
+              <Metric label="OVERDUE" value={formatPaise(dashboard.overduePaise)} />
+              <Metric label="COLLECTED" value={formatPaise(dashboard.collectedPaise)} />
+              <Metric label="CORRECTED" value={formatPaise(dashboard.correctionPaise)} />
+            </div>
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              <Badge variant="dark">Receipt book</Badge>
+              <span className="mono-caption text-paper-muted">Reversals, never deletions</span>
             </div>
           </div>
-          <div className="border border-obsidian/15 bg-paper p-5">
-            <p className="mono-label text-machine">CUSTOMER EXPOSURE</p>
-            <div className="mt-4 space-y-3">
-              <div className="flex items-center justify-between text-sm">
-                <span>Retailers</span>
-                <span className="font-mono">{formatPaise(dashboard.retailerOutstandingPaise)}</span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span>Distributors</span>
-                <span className="font-mono">{formatPaise(dashboard.distributorOutstandingPaise)}</span>
-              </div>
-              <div className="border-t border-obsidian/10 pt-3">
-                {dashboard.customers.slice(0, 5).map((customer) => (
-                  <div key={customer.customerId} className="flex items-center justify-between gap-4 py-1 text-xs">
-                    <span className="truncate">{customer.customerName}</span>
-                    <span className="shrink-0 font-mono">{formatPaise(customer.outstandingPaise)}</span>
+        }
+      />
+
+      <div className="page-frame py-10 sm:py-14">
+        {error ? <Notice tone="error" className="mb-6">{error}</Notice> : null}
+        {notice ? <Notice tone="success" className="mb-6">{notice}</Notice> : null}
+
+        <div className="mt-2">
+          <p className="mono-label text-rust-ink">01 / Aging & exposure</p>
+          <section className="mt-3 grid min-w-0 gap-4 lg:grid-cols-2">
+            <div className="min-w-0 border border-obsidian/15 bg-paper p-5">
+              <p className="mono-label text-ink-muted">AGING BUCKETS</p>
+              <div className="mt-4 divide-y divide-obsidian/10 border-y border-obsidian/10">
+                {dashboard.aging.map((bucket) => (
+                  <div key={bucket.bucket} className="flex items-center justify-between gap-4 py-3">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium">{bucket.label}</p>
+                      <p className="mono-caption mt-1 text-ink-muted">{bucket.invoiceCount} invoices</p>
+                    </div>
+                    <p className="shrink-0 font-mono text-sm tabular">{formatPaise(bucket.outstandingPaise)}</p>
                   </div>
                 ))}
-                {dashboard.customers.length === 0 ? (
-                  <p className="text-sm text-machine">No customer balances are open.</p>
+              </div>
+            </div>
+            <div className="min-w-0 border border-obsidian/15 bg-paper p-5">
+              <p className="mono-label text-ink-muted">CUSTOMER EXPOSURE</p>
+              <div className="mt-4 space-y-3">
+                <div className="flex items-center justify-between text-sm">
+                  <span>Retailers</span>
+                  <span className="font-mono tabular">{formatPaise(dashboard.retailerOutstandingPaise)}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span>Distributors</span>
+                  <span className="font-mono tabular">{formatPaise(dashboard.distributorOutstandingPaise)}</span>
+                </div>
+                <div className="border-t border-obsidian/10 pt-3">
+                  {dashboard.customers.slice(0, 5).map((customer) => (
+                    <div key={customer.customerId} className="flex items-center justify-between gap-4 py-1 text-xs">
+                      <span className="min-w-0 truncate">{customer.customerName}</span>
+                      <span className="shrink-0 font-mono tabular">{formatPaise(customer.outstandingPaise)}</span>
+                    </div>
+                  ))}
+                  {dashboard.customers.length === 0 ? (
+                    <p className="text-sm text-ink-muted">No customer balances are open.</p>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div className="mt-10">
+          <p className="mono-label text-rust-ink">02 / Receivables</p>
+          <TableFrame
+            className="mt-3"
+            title="Outstanding invoices"
+            description="Open tax documents with aging and collectable balance"
+            actions={
+              <div className="flex w-full min-w-0 flex-wrap items-center gap-2 sm:w-auto">
+                <div className="relative min-w-0 flex-1 sm:w-56 sm:flex-none">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-muted" aria-hidden="true" />
+                  <Input
+                    value={query}
+                    onChange={(event) => setQuery(event.target.value)}
+                    placeholder="Search invoices"
+                    aria-label="Search invoices"
+                    className="h-10 pl-9"
+                  />
+                </div>
+                <Button variant="outline" size="icon" className="h-10 w-10" onClick={() => void refresh()} aria-label="Refresh collections">
+                  <RefreshCw className="h-4 w-4" />
+                </Button>
+                {canManage ? (
+                  <Button onClick={() => openPayment()}>
+                    <Banknote className="h-4 w-4" /> Record payment
+                  </Button>
                 ) : null}
               </div>
-            </div>
-          </div>
-        </section>
-
-        <section>
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className="mono-label text-machine">RECEIVABLES</p>
-              <h2 className="mt-1 text-2xl font-semibold">Outstanding invoices</h2>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <div className="relative">
-                <Search className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-machine" />
-                <Input
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                  placeholder="Search invoices"
-                  className="h-10 pl-9"
-                />
-              </div>
-              <Button variant="outline" size="icon" onClick={() => void refresh()} aria-label="Refresh collections">
-                <RefreshCw className="h-4 w-4" />
-              </Button>
-              {canManage ? (
-                <Button onClick={() => openPayment()}>
-                  <Banknote className="h-4 w-4" /> Record payment
-                </Button>
-              ) : null}
-            </div>
-          </div>
-          <div className="overflow-x-auto border border-obsidian/15">
-            <table className="w-full min-w-[900px] text-left text-sm">
-              <thead className="surface-dark text-paper">
-                <tr>
-                  <th className="px-4 py-3 font-mono text-[10px] uppercase tracking-label">Invoice</th>
-                  <th className="px-4 py-3 font-mono text-[10px] uppercase tracking-label">Customer</th>
-                  <th className="px-4 py-3 font-mono text-[10px] uppercase tracking-label">Due date</th>
-                  <th className="px-4 py-3 font-mono text-[10px] uppercase tracking-label">Aging</th>
-                  <th className="px-4 py-3 font-mono text-[10px] uppercase tracking-label">Status</th>
-                  <th className="px-4 py-3 text-right font-mono text-[10px] uppercase tracking-label">Invoice total</th>
-                  <th className="px-4 py-3 text-right font-mono text-[10px] uppercase tracking-label">Outstanding</th>
-                  <th className="px-4 py-3" />
+            }
+          >
+            <table className="w-full min-w-[900px] border-collapse text-left text-sm">
+              <thead>
+                <tr className="mono-label text-ink-muted">
+                  <th scope="col" className="px-5 py-4 font-medium">Invoice</th>
+                  <th scope="col" className="px-3 py-4 font-medium">Customer</th>
+                  <th scope="col" className="px-3 py-4 font-medium">Due date</th>
+                  <th scope="col" className="px-3 py-4 font-medium">Aging</th>
+                  <th scope="col" className="px-3 py-4 font-medium">Status</th>
+                  <th scope="col" className="px-3 py-4 text-right font-medium">Invoice total</th>
+                  <th scope="col" className="px-3 py-4 text-right font-medium">Outstanding</th>
+                  <th scope="col" className="px-5 py-4" />
                 </tr>
               </thead>
               <tbody>
                 {filtered.map((row) => (
-                  <tr key={row.invoiceId} className="border-t border-obsidian/10 hover:bg-pale-sage/40">
-                    <td className="px-4 py-3 font-mono">{row.invoiceNumber}</td>
-                    <td className="px-4 py-3">{row.customerName}</td>
-                    <td className="px-4 py-3 font-mono text-xs text-machine">{row.dueDate}</td>
-                    <td className="px-4 py-3 text-xs">{row.agingBucket.replaceAll("_", " ")}</td>
-                    <td className="px-4 py-3">
+                  <tr key={row.invoiceId} className="data-row">
+                    <td className="px-5 py-4 font-mono text-xs">{row.invoiceNumber}</td>
+                    <td className="px-3 py-4 text-sm">{row.customerName}</td>
+                    <td className="px-3 py-4 font-mono text-xs tabular text-ink-muted">{row.dueDate}</td>
+                    <td className="px-3 py-4 text-xs text-ink-muted">{row.agingBucket.replaceAll("_", " ")}</td>
+                    <td className="px-3 py-4">
                       <Badge variant={salesStatusVariant(row.status)}>{row.status.replaceAll("_", " ")}</Badge>
                     </td>
-                    <td className="px-4 py-3 text-right font-mono">{formatPaise(row.totalPaise)}</td>
-                    <td className="px-4 py-3 text-right font-mono">{formatPaise(row.outstandingPaise)}</td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-3 py-4 text-right font-mono text-sm tabular">{formatPaise(row.totalPaise)}</td>
+                    <td className="px-3 py-4 text-right font-mono text-sm tabular">{formatPaise(row.outstandingPaise)}</td>
+                    <td className="px-5 py-4 text-right">
                       {canManage && row.outstandingPaise > 0 ? (
                         <Button variant="outline" size="sm" onClick={() => openPayment(row.invoiceNumber)}>
                           Collect
@@ -306,53 +318,55 @@ export function CollectionsWorkspace({
                 ))}
                 {filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="px-4 py-12 text-center text-machine">
-                      No invoices match this view.
+                    <td colSpan={8} className="px-5 py-16 text-center">
+                      <p className="mono-label text-ink-muted">No invoices match this view.</p>
                     </td>
                   </tr>
                 ) : null}
               </tbody>
             </table>
-          </div>
-        </section>
+          </TableFrame>
+        </div>
 
-        <section>
-          <div className="mb-4">
-            <p className="mono-label text-machine">RECEIPT BOOK</p>
-            <h2 className="mt-1 text-2xl font-semibold">Payment history</h2>
-          </div>
-          <div className="overflow-x-auto border border-obsidian/15">
-            <table className="w-full min-w-[1000px] text-left text-sm">
-              <thead className="surface-dark text-paper">
-                <tr>
-                  <th className="px-4 py-3 font-mono text-[10px] uppercase tracking-label">Receipt</th>
-                  <th className="px-4 py-3 font-mono text-[10px] uppercase tracking-label">Invoice</th>
-                  <th className="px-4 py-3 font-mono text-[10px] uppercase tracking-label">Customer</th>
-                  <th className="px-4 py-3 font-mono text-[10px] uppercase tracking-label">Paid at</th>
-                  <th className="px-4 py-3 font-mono text-[10px] uppercase tracking-label">Method</th>
-                  <th className="px-4 py-3 font-mono text-[10px] uppercase tracking-label">Type</th>
-                  <th className="px-4 py-3 text-right font-mono text-[10px] uppercase tracking-label">Amount</th>
-                  <th className="px-4 py-3" />
+        <div className="mt-10">
+          <p className="mono-label text-rust-ink">03 / Receipt book</p>
+          <TableFrame
+            className="mt-3"
+            title="Payment history"
+            description="Posted receipts and their reversing corrections"
+            actions={<span className="mono-caption text-ink-muted">{payments.length} entries</span>}
+          >
+            <table className="w-full min-w-[1000px] border-collapse text-left text-sm">
+              <thead>
+                <tr className="mono-label text-ink-muted">
+                  <th scope="col" className="px-5 py-4 font-medium">Receipt</th>
+                  <th scope="col" className="px-3 py-4 font-medium">Invoice</th>
+                  <th scope="col" className="px-3 py-4 font-medium">Customer</th>
+                  <th scope="col" className="px-3 py-4 font-medium">Paid at</th>
+                  <th scope="col" className="px-3 py-4 font-medium">Method</th>
+                  <th scope="col" className="px-3 py-4 font-medium">Type</th>
+                  <th scope="col" className="px-3 py-4 text-right font-medium">Amount</th>
+                  <th scope="col" className="px-5 py-4" />
                 </tr>
               </thead>
               <tbody>
                 {payments.map((payment) => (
-                  <tr key={payment.id} className="border-t border-obsidian/10">
-                    <td className="px-4 py-3 font-mono">{payment.paymentNumber}</td>
-                    <td className="px-4 py-3 font-mono">{payment.invoiceNumber}</td>
-                    <td className="px-4 py-3">{payment.customerName}</td>
-                    <td className="px-4 py-3 font-mono text-xs text-machine">{payment.paidAt}</td>
-                    <td className="px-4 py-3">{payment.method.replaceAll("_", " ")}</td>
-                    <td className="px-4 py-3">
+                  <tr key={payment.id} className="data-row">
+                    <td className="px-5 py-4 font-mono text-xs">{payment.paymentNumber}</td>
+                    <td className="px-3 py-4 font-mono text-xs">{payment.invoiceNumber}</td>
+                    <td className="px-3 py-4 text-sm">{payment.customerName}</td>
+                    <td className="px-3 py-4 font-mono text-xs tabular text-ink-muted">{payment.paidAt}</td>
+                    <td className="px-3 py-4 text-xs text-ink-muted">{payment.method.replaceAll("_", " ")}</td>
+                    <td className="px-3 py-4">
                       <Badge variant={payment.direction === "debit" ? "rust" : "default"}>
                         {payment.direction === "debit" ? "correction" : payment.status}
                       </Badge>
                     </td>
-                    <td className="px-4 py-3 text-right font-mono">
+                    <td className="px-3 py-4 text-right font-mono text-sm tabular">
                       {payment.signedAmountPaise < 0 ? "-" : ""}
                       {formatPaise(payment.amountPaise)}
                     </td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-5 py-4 text-right">
                       {canCorrect && payment.direction === "credit" && payment.status !== "corrected" ? (
                         <Button variant="outline" size="sm" onClick={() => openCorrection(payment)}>
                           <RotateCcw className="h-3 w-3" /> Correct
@@ -363,27 +377,28 @@ export function CollectionsWorkspace({
                 ))}
                 {payments.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="px-4 py-12 text-center text-machine">
-                      No receipts recorded yet.
+                    <td colSpan={8} className="px-5 py-16 text-center">
+                      <p className="mono-label text-ink-muted">No receipts recorded yet.</p>
                     </td>
                   </tr>
                 ) : null}
               </tbody>
             </table>
-          </div>
-        </section>
-      </main>
+          </TableFrame>
+        </div>
+      </div>
 
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
         <SheetContent side="bottom" className="max-w-xl">
-          <SheetHeader>
+          <SheetHeader className="border-b border-paper/10">
+            <p className="mono-label text-paper-muted">Cash receipt</p>
             <SheetTitle>Record collection</SheetTitle>
             <SheetDescription>
               {activeRow ? `${activeRow.customerName} · ${formatPaise(activeRow.outstandingPaise)} due` : "Choose an invoice with an outstanding balance."}
             </SheetDescription>
           </SheetHeader>
           <div className="space-y-4 px-6 pb-8">
-            <label className="block">
+            <label className="block min-w-0">
               <span className={salesLabelClass()}>INVOICE</span>
               <select
                 value={draft.invoiceNumber}
@@ -399,12 +414,12 @@ export function CollectionsWorkspace({
                   ))}
               </select>
             </label>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <label>
+            <div className="grid min-w-0 gap-4 sm:grid-cols-2">
+              <label className="min-w-0">
                 <span className={salesLabelClass()}>PAID AT</span>
                 <Input type="date" value={draft.paidAt} onChange={(event) => setDraft({ ...draft, paidAt: event.target.value })} />
               </label>
-              <label>
+              <label className="min-w-0">
                 <span className={salesLabelClass()}>AMOUNT (₹)</span>
                 <Input
                   inputMode="decimal"
@@ -412,7 +427,7 @@ export function CollectionsWorkspace({
                   onChange={(event) => setDraft({ ...draft, amount: event.target.value })}
                 />
               </label>
-              <label>
+              <label className="min-w-0">
                 <span className={salesLabelClass()}>METHOD</span>
                 <select
                   value={draft.method}
@@ -426,7 +441,7 @@ export function CollectionsWorkspace({
                   <option value="other">Other</option>
                 </select>
               </label>
-              <label>
+              <label className="min-w-0">
                 <span className={salesLabelClass()}>REFERENCE</span>
                 <Input
                   value={draft.referenceNo}
@@ -435,7 +450,7 @@ export function CollectionsWorkspace({
                 />
               </label>
             </div>
-            <label className="block">
+            <label className="block min-w-0">
               <span className={salesLabelClass()}>NOTES</span>
               <Input
                 value={draft.notes}
@@ -452,7 +467,8 @@ export function CollectionsWorkspace({
 
       <Sheet open={correctionOpen} onOpenChange={setCorrectionOpen}>
         <SheetContent side="bottom" className="max-w-xl">
-          <SheetHeader>
+          <SheetHeader className="border-b border-paper/10">
+            <p className="mono-label text-paper-muted">Reversing entry</p>
             <SheetTitle>Correct posted receipt</SheetTitle>
             <SheetDescription>
               {activePayment
@@ -461,8 +477,8 @@ export function CollectionsWorkspace({
             </SheetDescription>
           </SheetHeader>
           <div className="space-y-4 px-6 pb-8">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <label>
+            <div className="grid min-w-0 gap-4 sm:grid-cols-2">
+              <label className="min-w-0">
                 <span className={salesLabelClass()}>CORRECTION DATE</span>
                 <Input
                   type="date"
@@ -470,7 +486,7 @@ export function CollectionsWorkspace({
                   onChange={(event) => setCorrection({ ...correction, correctedAt: event.target.value })}
                 />
               </label>
-              <label>
+              <label className="min-w-0">
                 <span className={salesLabelClass()}>AMOUNT (₹)</span>
                 <Input
                   inputMode="decimal"
@@ -479,7 +495,7 @@ export function CollectionsWorkspace({
                 />
               </label>
             </div>
-            <label className="block">
+            <label className="block min-w-0">
               <span className={salesLabelClass()}>REASON</span>
               <Input
                 value={correction.reason}
@@ -503,9 +519,9 @@ export function CollectionsWorkspace({
 
 function Metric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="min-w-28 border-l-2 border-signal pl-3">
-      <p className="mono-label text-paper/50">{label}</p>
-      <p className="mt-1 font-mono text-lg text-signal">{value}</p>
+    <div className="min-w-0 bg-forest/70 p-4">
+      <p className="mono-label text-paper-muted">{label}</p>
+      <p className="mt-2 font-mono text-xl tabular text-signal">{value}</p>
     </div>
   );
 }
